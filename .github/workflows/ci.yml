@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Sem permissões amplas: leitura é o suficiente para rodar os gates.
+permissions:
+  contents: read
+
+jobs:
+  gates:
+    name: Audit + Tests + Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          # Versão fixa e explícita, fonte única de verdade em frontend/package.json
+          # (pnpm@11.18.0). Evita que o action instale uma versão default incompatível
+          # com pnpm-lock.yaml (lockfileVersion 9.0) e quebre `pnpm install --frozen-lockfile`.
+          version: "11.18.0"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "pnpm"
+          cache-dependency-path: "frontend/pnpm-lock.yaml"
+
+      - name: Setup dependencies
+        run: make setup
+
+      # Gate 1 — auditoria estrutural (python3 puro, sem .venv)
+      - name: Audit
+        run: make audit
+
+      # Gate 2 — testes backend (pytest) e frontend (typecheck + test)
+      - name: Test
+        run: make test
+
+      # Gate 3 — ruff, mypy e eslint
+      - name: Lint
+        run: make lint

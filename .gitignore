@@ -1,0 +1,41 @@
+# Estado local da máquina. runtime/ é a área de trabalho do sistema: propostas
+# ainda não validadas, logs e bancos vivem ali e nunca são versionados.
+runtime/
+
+# Segredos. As chaves ficam em ~/.config/ane/secrets.env, fora do
+# repositório; estes padrões existem para que um deslize não vire commit.
+.env
+secrets.env
+credentials.json
+token.json
+client_secret*.json
+
+# Ambientes e dependências resolvidas a partir dos lockfiles.
+.venv/
+node_modules/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Builds, caches de ferramenta e artefatos derivados do corpus.
+dist/
+*.tsbuildinfo
+frontend/public/projection.json
+.trash/
+.DS_Store
+
+# Preferências de editor: locais da máquina, fora da baseline canônica.
+.vscode/
+
+# Planos e estado de agentes locais — não são o produto.
+.hermes/
+
+# Artefatos de empacotamento — não pertencem ao histórico do corpus.
+*.bundle
+*.zip
+*.tar.gz
+
+# Nunca ignorar: AGENTS.md, CLAUDE.md, tools/audit.py e os lockfiles integram a
+# baseline. knowledge/ é o corpus canônico e é versionado por inteiro.
