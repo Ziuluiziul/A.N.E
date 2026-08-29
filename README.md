@@ -1,6 +1,6 @@
-# A.N.E.
+# Atlas Neural-Epistêmico
 
-**Atlas Neural-Epistêmico.** Corpus acadêmico interdisciplinar vivo e o sistema
+Corpus acadêmico interdisciplinar vivo e o sistema
 que o projeta num Atlas 3D, delibera por quórum multimodelo e promove o que
 passou nas guardas. O corpus é o produto; o resto é o mecanismo que o sustenta.
 
