@@ -10,7 +10,7 @@ verified_at: 2026-07-18
 
 # Ciência da computação
 
-**Objeto central:** fundamentos teóricos e sistêmicos da computação — custo, correção e abstracões de máquina — independentes de linguagem.
+**Objeto central:** fundamentos teóricos e sistêmicos da computação — custo, correção e abstrações de máquina — independentes de linguagem.
 
 ## Árvore de pré-requisitos
 
