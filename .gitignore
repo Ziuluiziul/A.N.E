@@ -2,7 +2,7 @@
 # ainda não validadas, logs e bancos vivem ali e nunca são versionados.
 runtime/
 
-# Segredos. As chaves ficam em ~/.config/ane/secrets.env, fora do
+# Segredos. As chaves ficam em ~/.config/vault-autodidata/secrets.env, fora do
 # repositório; estes padrões existem para que um deslize não vire commit.
 .env
 secrets.env

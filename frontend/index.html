@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>A.N.E. · Atlas Neural-Epistêmico</title>
+  </head>
+  <body>
+    <main>
+      <div id="stage" aria-label="A.N.E. — Atlas Neural-Epistêmico" role="application"></div>
+      <!--
+        Camada acessível. Invisível por CSS, não por display:none — leitores de tela
+        precisam alcançá-la, e a busca do navegador também. A apresentação visível
+        é inteiramente tridimensional.
+      -->
+      <p id="live" class="sr-only" role="status" aria-live="polite">iniciando</p>
+      <div id="a11y" class="sr-only"></div>
+      <p id="connection" class="connection-status" role="status" aria-live="polite">
+        corpus: conectando · runtime: conectando
+      </p>
+      <!--
+        A legenda, entre o cartão de atividade e o estado da conexão. Fechada por
+        padrão: ela responde a uma pergunta que só se faz uma vez, e ocupar a faixa de
+        baixo permanentemente cobraria atenção de quem já sabe ler a cena.
+
+        O conteúdo dos dois blocos é gerado — `SCENE_LEGEND` para a navegação e
+        `buildSceneLegend` para a leitura do Atlas —, e nunca digitado aqui: legenda
+        escrita à mão envelhece calada.
+      -->
+      <button
+        id="legend-toggle"
+        class="legend-toggle"
+        type="button"
+        aria-expanded="false"
+        aria-controls="legend-panel"
+        title="Como ler e navegar o Atlas"
+      >
+        ?
+      </button>
+      <button
+        id="activity-auto"
+        class="legend-toggle activity-auto"
+        type="button"
+        aria-pressed="false"
+        aria-label="Automação"
+        title="Automação"
+        disabled
+      >
+        A
+      </button>
+      <!--
+        Esquecer a memória espacial. Escondido até a cena 3D existir: no modo
+        textual não há posição nenhuma para esquecer.
+      -->
+      <button
+        id="layout-reset"
+        class="legend-toggle layout-reset"
+        type="button"
+        hidden
+        title="Esquecer posições gravadas e voltar ao cálculo determinístico"
+      >
+        ⟲
+      </button>
+      <aside id="legend-panel" class="legend-panel" aria-label="Legenda do Atlas" hidden></aside>
+      <div class="activity-cluster">
+        <div
+          id="activity"
+          class="activity-status"
+          data-state="empty"
+          data-layout="single"
+          role="button"
+          tabindex="0"
+          aria-disabled="true"
+          aria-label="Atividade operacional: aguardando conexão"
+        >
+          <span class="activity-status__signal" aria-hidden="true"></span>
+          <span class="activity-status__copy" aria-live="polite">
+            <strong id="activity-title">Atividade operacional</strong>
+            <span id="activity-detail">Aguardando a trilha ao vivo.</span>
+            <div id="activity-streams" class="activity-streams" hidden></div>
+            <small id="activity-meta">revisão 0</small>
+          </span>
+        </div>
+      </div>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

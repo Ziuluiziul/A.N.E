@@ -22,7 +22,7 @@
   <path d="M20 64a44 44 0 0 1 88 0" fill="url(#calota)" stroke="none"/>
   <ellipse cx="64" cy="64" rx="17" ry="44" fill="none" stroke="#6f7c89" stroke-opacity="0.30" stroke-width="1.5"/>
 
-  <!-- Arestas tipadas: sólidas onde há relação, ténues onde é só navegação -->
+  <!-- Arestas tipadas: sólidas onde há relação, tênues onde é só navegação -->
   <g stroke="#bcc5d1" stroke-opacity="0.55" stroke-width="2" stroke-linecap="round" fill="none">
     <path d="M64 40 L38 58"/>
     <path d="M64 40 L90 58"/>

@@ -1,7 +1,7 @@
 [project]
-name = "ane"
+name = "vault-autodidata"
 version = "0.1.0"
-description = "A.N.E. (Atlas Neural-Epistêmico): corpus acadêmico vivo e o sistema que o projeta, delibera e promove"
+description = "A.N.E. — Atlas Neural-Epistêmico: corpus acadêmico e o código que o sustenta"
 requires-python = ">=3.13"
 dependencies = [
     # Backend
@@ -64,3 +64,7 @@ known-first-party = ["vault", "providers", "integrations"]
 python_version = "3.13"
 files = ["backend/src", "providers", "integrations", "tools", "tests"]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "vault.wincompat"
+ignore_errors = true

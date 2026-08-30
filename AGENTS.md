@@ -1,9 +1,11 @@
 # Instruções para agentes neste repositório
 
-Este é o **A.N.E.** — Atlas Neural-Epistêmico. O produto é o corpus em
-`knowledge/` e o sistema que o projeta, delibera e promove. Código de apoio
-nunca se sobrepõe ao corpus. As regras abaixo valem para qualquer agente que
-trabalhe neste produto.
+Este é o **A.N.E.** — Atlas Neural-Epistêmico. O repositório abriga duas coisas
+com pesos diferentes. Em `knowledge/` está um **corpus de conhecimento**, cujo
+produto é o texto e a confiabilidade das afirmações; todo o resto é código de
+apoio a ele. Vários agentes trabalham aqui
+(Claude Code, Codex/ChatGPT no VS Code, ChatGPT no navegador), o que torna as
+regras abaixo mais importantes que qualquer preferência de estilo.
 
 O rigor máximo pertence ao conteúdo acadêmico. Código nunca entra em `knowledge/`,
 e saída de modelo nunca entra no corpus direto: ela fica em
@@ -62,21 +64,20 @@ vocabulários do frontmatter, `review_after` vencido, datas, forma e vocabulári
 claims e unicidade dos seus IDs. Zero em todas as linhas de defeito, ou a alteração
 não está pronta.
 
-Este script é um auditor **estrutural e parcial**: não valida verdade científica,
-não resolve fontes e não confere se um identificador corresponde ao título
-canônico. Sair com código 0 significa que a estrutura está íntegra, nunca que o
-conteúdo está certo. A própria saída declara separadamente que fontes externas não
-foram verificadas. Isso continua sendo julgamento humano.
+Este script substitui o gate determinístico do pipeline antigo, descontinuado na
+migração de 2026-07-28. Ele é um auditor **estrutural e parcial**: não valida
+verdade científica, não resolve fontes e não confere se um identificador
+corresponde ao título canônico. Sair com código 0 significa que a estrutura está
+íntegra, nunca que o conteúdo está certo. A própria saída declara separadamente
+que fontes externas não foram verificadas. Isso continua sendo julgamento humano.
 
 ## Onde fica o código
 
-`backend/src/vault/` é o pacote Python interno (`vault`); `providers/` traz um
-adaptador por provedor; `integrations/google_workspace/` cobre as APIs do
-Workspace; `frontend/` é a cena 3D em TypeScript e Three.js; `tools/` são os
-scripts curtos que o `Makefile` chama; `tests/` os testes; `runtime/` o estado
-local ignorado pelo Git. Segredos moram em `~/.config/ane/secrets.env` (canônico)
-ou, se esse arquivo não existir, em `~/.config/vault-autodidata/secrets.env`
-(legado). Nunca no repositório.
+`backend/src/vault/` é o pacote Python (`vault`); `providers/` traz um adaptador por
+provedor; `integrations/google_workspace/` cobre as APIs do Workspace; `frontend/` é
+a cena 3D em TypeScript e Three.js; `tools/` são os scripts curtos que o `Makefile`
+chama; `tests/` os testes; `runtime/` o estado local ignorado pelo Git. Segredos
+moram em `~/.config/vault-autodidata/secrets.env` e nunca no repositório.
 
 ## Escopo
 
@@ -86,8 +87,8 @@ nome — mas mudanças estruturais são decisão do mantenedor, não do agente.
 
 ## Regime de execução
 
-Implementação não espera aprovação humana. Trabalho de código que passe nos gates
-locais é commitado pelo próprio agente:
+Desde a diretriz de 2026-08-03, implementação não espera aprovação humana. Trabalho
+de código que passe nos gates locais é commitado pelo próprio agente:
 
 ```bash
 make audit && make test && make lint
@@ -105,8 +106,8 @@ própria contagem. O corpus segue fechado à escrita direta: o caminho é
 `runtime/quorum/<painel>/` e o Proposal Promoter, que aplica o patch, roda os
 controles mínimos e registra quem propôs e quem avaliou. Defeito de conteúdo já
 presente no corpus (ata de painel, LaTeX mutilado, título canônico corrompido,
-Política sem o regime vigente) entra na fila como origem de restauração e não
-espera comando avulso.
+Política sem o regime de 2026-08-03) entra na fila como origem de restauração e
+não espera comando avulso.
 
 Confirmação humana permanece obrigatória em quatro casos, e só neles:
 
