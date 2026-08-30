@@ -8,7 +8,13 @@ from typing import Any
 import pytest
 from pydantic import SecretStr
 
-from vault.config import ANE_SECRETS_FILE, LEGACY_SECRETS_FILE, REPO_ROOT, SECRETS_FILE, Settings
+from vault.config import (
+    ANE_SECRETS_FILE,
+    LEGACY_SECRETS_FILE,
+    REPO_ROOT,
+    SECRETS_FILE,
+    Settings,
+)
 
 
 def settings_isoladas(**overrides: Any) -> Settings:
@@ -31,7 +37,7 @@ def test_caminhos_padrao_apontam_para_dentro_do_repositorio(repo_root: Path) -> 
 
 def test_segredos_moram_fora_do_repositorio(repo_root: Path) -> None:
     esperado = ANE_SECRETS_FILE if ANE_SECRETS_FILE.is_file() else LEGACY_SECRETS_FILE
-    assert SECRETS_FILE == esperado
+    assert esperado == SECRETS_FILE
     assert SECRETS_FILE in {ANE_SECRETS_FILE, LEGACY_SECRETS_FILE}
     assert repo_root not in SECRETS_FILE.parents
 
