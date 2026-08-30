@@ -18,6 +18,8 @@ Não é diário de sessões, nem arquivo de handoffs.
 | [ATLAS-SSE.md](ATLAS-SSE.md) | Contrato HTTP SSE do tecido runtime (não MongoDB Atlas) |
 | [WORKER.md](WORKER.md) | `VAULT_AUTONOMOUS_WORKER`: quem spawna, default, teto de chamadas |
 | [X-MCP.md](X-MCP.md) | Plugin Cursor / Grok Bot; não é contrato do vault |
+| [SOURCE-RESOLVER.md](SOURCE-RESOLVER.md) | Contrato DOI/arXiv/ISBN; skip sem rede |
+| [audits/2026-08-30-ciclo-1/](audits/2026-08-30-ciclo-1/) | ciclo 1 (HEAD `27d4bdd`); promotes + ISBN fora do corpus |
 
 Este diretório não é diário de sessões. Handoff, CICLO e PROMPT ficam fora
 do índice. Docs não promovem handoff a spec.
