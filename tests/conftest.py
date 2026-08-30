@@ -1,0 +1,17 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+
+
+@pytest.fixture(scope="session")
+def corpus_dir() -> Path:
+    return REPO_ROOT / "knowledge"
+
+
+@pytest.fixture(scope="session")
+def repo_root() -> Path:
+    return REPO_ROOT

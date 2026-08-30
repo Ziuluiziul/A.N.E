@@ -1,0 +1,1361 @@
+/* O palco ocupa a janela inteira. A única placa persistente de DOM declara a saúde
+   do transporte; controles e leitura continuam nas superfícies da cena. */
+
+:root {
+  /* Fundo carvão azulado do dossiê — não preto puro. */
+  --bg: #0b1016;
+  --text: #edf2f9;
+  --error: #ff9db1;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+main,
+#stage {
+  width: 100%;
+  height: 100%;
+}
+
+#stage canvas {
+  display: block;
+}
+
+/*
+  Régua das referências espaciais.
+
+  Não é um segundo painel de controle: não contém valor, estado nem configuração. Cada
+  marca corresponde a uma placa que o próprio layout declara fixa e só leva a câmera
+  até ela. A borda única faz a peça ler como instrumento preso ao quadro, não como uma
+  pilha de botões flutuantes.
+
+  **Por que 208px e não 42.** O monograma de duas letras era ambíguo entre os próprios
+  alvos — `CC`, `CO` e `MC` são Ciência da Computação, Cognição e Metodologia Científica,
+  e só o tooltip desfazia. Nome inteiro exige largura, e a largura é o preço de a régua
+  ser legível sem apontar o mouse. Ela cobre a borda direita da cena, que é a faixa mais
+  vazia do enquadramento — nenhuma medida de layout lê esta largura, então alargar aqui
+  não desloca o mundo. Provedores em cima; conhecimento rola abaixo.
+*/
+.anchor-rail {
+  position: fixed;
+  top: 48px;
+  right: 0;
+  bottom: 44px;
+  z-index: 8;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  width: 212px;
+  padding: 8px 7px 8px 10px;
+  overflow: hidden;
+  background: rgb(11 16 22 / 68%);
+  border-left: 1px solid #26303c;
+  backdrop-filter: blur(8px);
+  scrollbar-color: #46566a transparent;
+  scrollbar-width: thin;
+}
+
+.anchor-rail--direita {
+  right: 0;
+}
+
+.anchor-rail--esquerda {
+  display: none;
+}
+
+.anchor-rail__group {
+  display: grid;
+  gap: 3px;
+  justify-items: stretch;
+}
+
+/*
+  Provedores no topo, com teto próprio para rolarem sem empurrar o conhecimento.
+  O conhecimento cede o resto da coluna e também rola.
+*/
+.anchor-rail__group[data-group='providers'] {
+  flex: 0 1 auto;
+  max-height: 42%;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-color: #46566a transparent;
+  scrollbar-width: thin;
+}
+
+.anchor-rail__group[data-group='knowledge'] {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-color: #46566a transparent;
+  scrollbar-width: thin;
+}
+
+.anchor-rail__group + .anchor-rail__group {
+  padding-top: 9px;
+  border-top: 1px solid rgb(112 137 161 / 22%);
+}
+
+/*
+  O nome do grupo é o que separa conhecimento, provedores e trabalhadores. Gruda no topo
+  porque a régua rola: fora da tela o cabeçalho, um nome como `proponente` não diz mais
+  a que família pertence. O fundo é opaco o bastante para ocultar a linha que passa sob ele.
+*/
+.anchor-rail__heading {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 0;
+  padding: 5px 3px 4px;
+  font: 650 9px/1 ui-monospace, 'Cascadia Code', 'Source Code Pro', monospace;
+  color: #8ca4ba;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  background: rgb(11 16 22 / 94%);
+}
+
+.anchor-rail__target {
+  --anchor-color: #8ba5bd;
+
+  position: relative;
+  display: grid;
+  align-items: center;
+  width: 100%;
+  height: 25px;
+  padding: 0 7px 0 10px;
+  color: #b9cad9;
+  text-align: left;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid rgb(114 139 162 / 20%);
+  border-radius: 4px;
+}
+
+.anchor-rail__target::before {
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  left: -1px;
+  width: 2px;
+  content: '';
+  background: var(--anchor-color);
+  border-radius: 0 2px 2px 0;
+  opacity: 0.52;
+}
+
+/* Uma linha só: o nome que não couber termina em elipse, e o inteiro fica no tooltip. */
+.anchor-rail__name {
+  overflow: hidden;
+  font: 500 11.5px/1.25 ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.anchor-rail__target:hover {
+  color: #e8f2fa;
+  background: rgb(39 54 68 / 66%);
+  border-color: rgb(139 169 195 / 48%);
+}
+
+.anchor-rail__target[aria-current='true'] {
+  color: #eff8ff;
+  background: rgb(45 64 80 / 82%);
+  border-color: #78c8df;
+}
+
+.anchor-rail__target[aria-current='true']::before {
+  width: 3px;
+  opacity: 1;
+}
+
+.anchor-rail__target:focus-visible {
+  outline: 2px solid #9de9fa;
+  outline-offset: 2px;
+}
+
+/*
+  Altura e largura respondem a coisas diferentes, e juntá-las numa regra só encolhia o
+  nome numa janela de 1280×720 — larga o bastante, baixa demais. Janela baixa muda o
+  eixo vertical; só janela estreita justifica cortar a largura, que é o que decide se
+  `MOC — Metodologia Científica` cabe ou termina em elipse.
+*/
+@media (height <= 720px) {
+  .anchor-rail {
+    top: 40px;
+    bottom: 78px;
+  }
+
+  .anchor-rail__target {
+    height: 23px;
+  }
+}
+
+@media (width <= 900px) {
+  .anchor-rail {
+    width: 168px;
+  }
+}
+
+/*
+  A legenda vive na folga entre o cartão de atividade (termina em 574px) e o estado da
+  conexão (ocupa cerca de 220px à direita). Fechada, ela é só o `?`; aberta, ela sobe
+  em cima da cena sem empurrar nada, porque tudo aqui é `fixed`.
+*/
+.legend-toggle {
+  position: fixed;
+  bottom: 12px;
+  left: 590px;
+  z-index: 9;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  color: #cfe2f2;
+  font: 600 13px/1 ui-monospace, 'Cascadia Code', 'Source Code Pro', monospace;
+  cursor: pointer;
+  background: rgb(11 16 22 / 82%);
+  border: 1px solid #314050;
+  border-radius: 50%;
+}
+
+/* AUTO é o mesmo gesto que `?`: um círculo, sem alongar o cartão de pensamentos. */
+.activity-auto {
+  left: 622px;
+}
+
+.activity-auto[aria-pressed='true'],
+.activity-auto[aria-pressed='true']:hover {
+  color: #0b1016;
+  background: #9be4fc;
+  border-color: #9be4fc;
+}
+
+.activity-auto:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+/* O reset de posições mora ao lado do `A`: mesma forma, gesto raro, confirmação
+   antes de agir. A seta circular diz que o estado volta, não que se cria algo. */
+.layout-reset {
+  left: 654px;
+  font-size: 15px;
+}
+
+/*
+  A busca sobre a cena. Vive centralizada no topo, como um comando: teclado abre,
+  teclado fecha, e a lista nunca empurra o Atlas.
+*/
+.search-palette {
+  position: fixed;
+  top: 12vh;
+  left: 50%;
+  z-index: 12;
+  display: grid;
+  gap: 8px;
+  width: min(560px, 92vw);
+  padding: 10px;
+  background: rgb(11 16 22 / 92%);
+  border: 1px solid #26303c;
+  border-radius: 10px;
+  backdrop-filter: blur(10px);
+  transform: translateX(-50%);
+}
+
+.search-palette[hidden] {
+  display: none;
+}
+
+.search-palette input {
+  width: 100%;
+  padding: 10px 12px;
+  color: var(--text);
+  font: inherit;
+  background: #10161f;
+  border: 1px solid #2b3542;
+  border-radius: 8px;
+  outline: none;
+}
+
+.search-palette input:focus {
+  border-color: #46566a;
+}
+
+.search-palette__lista {
+  display: grid;
+  gap: 2px;
+  max-height: 46vh;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.search-palette__item {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  width: 100%;
+  padding: 8px 10px;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  background: none;
+  border: 0;
+  border-radius: 6px;
+}
+
+.search-palette__item:hover,
+.search-palette__item--ativa {
+  background: #1a2634;
+}
+
+.search-palette__dominio {
+  margin-left: auto;
+  color: #7d92a8;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.search-palette__vazio {
+  margin: 0;
+  padding: 0 10px;
+  color: #7d92a8;
+  font-size: 13px;
+}
+
+.legend-toggle:hover,
+.legend-toggle[aria-expanded='true'] {
+  color: #9de9fa;
+  border-color: #78c8df;
+}
+
+.legend-toggle:focus-visible {
+  outline: 2px solid #9de9fa;
+  outline-offset: 3px;
+}
+
+.legend-panel {
+  position: fixed;
+  bottom: 46px;
+  left: 590px;
+  z-index: 9;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 14px 22px;
+  width: min(720px, calc(100vw - 620px));
+  max-height: min(60vh, 520px);
+  padding: 14px 16px;
+  overflow-y: auto;
+  font: 12px/1.5 ui-sans-serif, system-ui, sans-serif;
+  color: #c6d6e6;
+  background: rgb(11 16 22 / 96%);
+  border: 1px solid #314050;
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+}
+
+.legend-panel[hidden] {
+  display: none;
+}
+
+.legend-panel h2 {
+  margin: 0 0 2px;
+  color: #eaf3fb;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.legend-panel p {
+  margin: 0 0 6px;
+  color: #93a6b8;
+  font-size: 11px;
+  font-style: italic;
+}
+
+.legend-panel ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.legend-panel li {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr);
+  gap: 8px;
+  align-items: baseline;
+  padding: 1px 0;
+}
+
+.legend-panel .legend-mark {
+  color: #dceaf7;
+  font: 11px/1.5 ui-monospace, 'Cascadia Code', 'Source Code Pro', monospace;
+  overflow-wrap: anywhere;
+}
+
+.legend-panel .legend-swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 5px;
+  vertical-align: -1px;
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-radius: 3px;
+}
+
+.legend-panel svg {
+  vertical-align: middle;
+}
+
+@media (width <= 1180px) {
+  .legend-toggle,
+  .layout-reset,
+  .activity-auto,
+  .legend-panel {
+    left: auto;
+    right: 14px;
+  }
+
+  .legend-toggle {
+    bottom: 46px;
+  }
+
+  .activity-auto {
+    right: 46px;
+    bottom: 46px;
+  }
+
+  .layout-reset {
+    right: 78px;
+    bottom: 46px;
+  }
+
+  .legend-panel {
+    width: min(420px, calc(100vw - 28px));
+    bottom: 80px;
+  }
+}
+
+.connection-status {
+  position: fixed;
+  right: 14px;
+  bottom: 12px;
+  z-index: 8;
+  margin: 0;
+  padding: 5px 9px;
+  font: 600 11px/1.3 ui-monospace, 'Cascadia Code', 'Source Code Pro', monospace;
+  color: #9be4fc;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+  background: rgb(11 16 22 / 82%);
+  border: 1px solid #314050;
+  border-radius: 5px;
+}
+
+.connection-status[data-state='degraded'] {
+  color: #f0d48a;
+  border-color: #625529;
+}
+
+/* A conexão diz se o transporte está vivo; esta superfície diz se há trabalho.
+   Fica sempre visível porque esconder a única leitura operacional atrás de Esc fazia
+   um worker em espera e um worker produzindo parecerem a mesma cena. Ao clicar, leva
+   ao modelo/evento correspondente dentro do Atlas — não duplica o conteúdo dele.
+   AUTO mora no círculo ao lado do `?`, para não crescer com o raciocínio. */
+.activity-cluster {
+  position: fixed;
+  bottom: 14px;
+  left: 14px;
+  z-index: 8;
+  display: flex;
+  width: min(520px, calc(100vw - 200px));
+  max-height: min(38vh, 340px);
+}
+
+.activity-status {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-columns: 12px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  min-width: 0;
+  max-height: inherit;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 10px 12px;
+  font: inherit;
+  color: #dbe8f5;
+  text-align: left;
+  cursor: pointer;
+  background: rgb(11 16 22 / 88%);
+  border: 1px solid #314050;
+  border-radius: 7px;
+  backdrop-filter: blur(10px);
+}
+
+.activity-status[aria-disabled='true'] {
+  cursor: default;
+  opacity: 1;
+}
+
+.activity-status[aria-disabled='false']:hover {
+  border-color: #78c8df;
+}
+
+.activity-status:focus-visible {
+  border-color: #9de9fa;
+  outline: 2px solid #9de9fa;
+  outline-offset: 3px;
+}
+
+.activity-status:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.activity-status__signal {
+  width: 10px;
+  height: 10px;
+  margin-top: 4px;
+  background: #718096;
+  border: 1px solid #a9b4c2;
+  border-radius: 50%;
+}
+
+.activity-status__copy {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  gap: 1px;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.activity-status[data-layout='split'] {
+  cursor: default;
+}
+
+.activity-status strong,
+.activity-status small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activity-status strong {
+  font-size: 13px;
+  letter-spacing: 0.015em;
+}
+
+.activity-status #activity-detail {
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  color: #aebdcd;
+  font-size: 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.activity-streams {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  margin-top: 4px;
+  overflow-y: auto;
+}
+
+.activity-stream {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+  padding: 6px 8px;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  background: rgb(255 255 255 / 4%);
+  border: 1px solid #3a4a5a;
+  border-radius: 5px;
+}
+
+.activity-stream--thinking {
+  border-color: #4aa7c1;
+}
+
+.activity-stream:hover,
+.activity-stream:focus-visible {
+  border-color: #78c8df;
+}
+
+.activity-stream:focus-visible {
+  outline: 2px solid #9de9fa;
+  outline-offset: 1px;
+}
+
+.activity-stream__who {
+  overflow: hidden;
+  color: #9be4fc;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activity-stream__text {
+  min-height: 0;
+  overflow-wrap: anywhere;
+  color: #aebdcd;
+  font-size: 12px;
+  white-space: pre-wrap;
+}
+
+.activity-status small {
+  color: #9aabba;
+  font: 11px/1.4 ui-monospace, 'Cascadia Code', 'Source Code Pro', monospace;
+}
+
+.activity-status[data-state='active'] {
+  border-color: #4aa7c1;
+  box-shadow: 0 0 24px rgb(94 203 230 / 13%);
+}
+
+.activity-status[data-state='active'] .activity-status__signal {
+  background: #8ce5f7;
+  border-color: #d4f8ff;
+  animation: activity-breathe 1.4s ease-in-out infinite;
+}
+
+.activity-status[data-state='recent'] .activity-status__signal {
+  background: #a9d8a0;
+  border-color: #d9f4d4;
+}
+
+.activity-status[data-state='paused'] .activity-status__signal {
+  background: #e6bf70;
+  border-color: #ffe3a7;
+}
+
+.activity-status[data-state='unavailable'] {
+  border-color: #6d4a4a;
+}
+
+.activity-status[data-state='unavailable'] .activity-status__signal {
+  background: #c77878;
+  border-color: #f2b4b4;
+}
+
+@keyframes activity-breathe {
+  50% {
+    box-shadow: 0 0 0 6px rgb(140 229 247 / 12%);
+    transform: scale(1.12);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .activity-status[data-state='active'] .activity-status__signal {
+    animation: none;
+    box-shadow: 0 0 0 3px rgb(140 229 247 / 14%);
+  }
+}
+
+/* Falha visível: um atlas que não carregou tem de dizer isso em texto grande, e
+   não mostrar uma cena vazia que passa por resultado. */
+.failure {
+  margin: 0;
+  padding: 8vh 6vw;
+  font: 14px/1.7 ui-monospace, 'Cascadia Code', 'Source Code Pro', monospace;
+  color: var(--error);
+  white-space: pre-wrap;
+}
+
+/* Alcançável por leitor de tela e pela busca do navegador; fora da composição
+   visual. `display: none` a esconderia das duas coisas. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Modo textual: substituto da cena, não um painel ao lado dela. Só existe quando o
+   3D foi dispensado ou não está disponível. */
+.modo-texto {
+  height: 100%;
+  padding: 4vh 6vw;
+  overflow-y: auto;
+}
+
+.modo-texto h1 {
+  margin: 0 0 4px;
+  font-size: 20px;
+}
+
+.modo-texto .motivo {
+  margin: 0 0 8px;
+  color: #9be4fc;
+}
+
+.modo-texto p {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: #bcc5d1;
+  overflow-wrap: anywhere;
+}
+
+.modo-texto input[type='search'] {
+  width: min(100%, 42rem);
+  padding: 8px 12px;
+  font: inherit;
+  color: var(--text);
+  background: #151b23;
+  border: 1px solid #21272f;
+  border-radius: 6px;
+}
+
+.modo-texto ul.entidades {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.modo-texto details {
+  padding: 6px 0;
+  border-bottom: 1px solid #21272f;
+}
+
+.modo-texto summary {
+  cursor: pointer;
+}
+
+.modo-texto dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 14px;
+  margin: 8px 0 4px 16px;
+  font-size: 13px;
+}
+
+.modo-texto dt {
+  color: #8d99ae;
+}
+
+.modo-texto dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.modo-texto dd ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.modo-texto #runtime-textual {
+  margin-top: 28px;
+  padding-top: 18px;
+  border-top: 1px solid #364253;
+}
+
+.modo-texto #runtime-textual h2 {
+  margin: 0 0 6px;
+  font-size: 17px;
+}
+
+.modo-texto #runtime-textual ul {
+  padding-left: 20px;
+  color: #d5dde8;
+}
+
+/* A configuração fora de cena. A cena não a monta mais: credencial e trabalhador
+   moram na placa, operação e AUTO no cartão. A regra de autor permanece porque
+   `.dock { display: flex }` não pode vencer `hidden` se alguém a reancorar. */
+.dock[hidden] {
+  display: none;
+}
+
+/* --- dock operacional ------------------------------------------------------
+
+   Overlay de DOM sobre a cena, à esquerda. Ele não é "um painel ao lado do
+   Atlas": o Atlas continua ocupando a janela inteira, e a câmera é que compensa
+   a faixa coberta — por isso abrir e fechar o dock não recalcula layout nenhum.
+
+   A transparência mora na superfície, nunca no texto: o fundo é semiopaco com
+   desfoque, e a cor do texto é sólida. Contraste medido contra o pior fundo que
+   pode aparecer atrás, que é a cena clara de um território próximo. */
+
+.dock {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  width: clamp(340px, 27vw, 420px);
+  height: 100%;
+  background: rgb(11 16 22 / 88%);
+  backdrop-filter: blur(14px);
+  border-right: 1px solid #26303c;
+}
+
+/* Especificidade dobrada de propósito. Com `.dock--recolhido` sozinho, a regra
+   empata com `.dock` e a ordem de injeção decide — e a ordem de injeção não é algo
+   que este arquivo controle.
+
+   Sem animação de largura, também de propósito. Uma transição de 120 ms fazia a
+   câmera compensar lendo uma largura intermediária, porque o recuo é medido no
+   instante do clique e a largura só chegava ao valor final três quadros depois. E
+   movimento aqui não significaria nada: o painel não está indo a lugar nenhum. */
+.dock.dock--recolhido {
+  width: 44px;
+  overflow: hidden;
+}
+
+.dock-header {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 8px 10px 14px;
+  border-bottom: 1px solid #26303c;
+}
+
+.dock-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.dock--recolhido .dock-title,
+.dock--recolhido .dock-footer {
+  display: none;
+}
+
+.dock-collapse {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  font: inherit;
+  color: var(--text);
+  cursor: pointer;
+  background: #182029;
+  border: 1px solid #2c3743;
+  border-radius: 6px;
+}
+
+.dock-tabs {
+  display: flex;
+  border-bottom: 1px solid #26303c;
+}
+
+.dock-tab {
+  flex: 1;
+  padding: 9px 6px;
+  font: inherit;
+  font-size: 13px;
+  color: #9fb0c4;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+}
+
+.dock-tab--ativa {
+  color: var(--text);
+  border-bottom-color: #9be4fc;
+}
+
+.dock-tab:focus-visible,
+.dock-collapse:focus-visible,
+.dock-btn:focus-visible,
+.dock-auto:focus-visible,
+.dock-input:focus-visible {
+  outline: 2px solid #9be4fc;
+  outline-offset: 1px;
+}
+
+.dock-body {
+  flex: 1;
+  padding: 12px 14px;
+  overflow-y: auto;
+}
+
+.dock-vazio {
+  margin: 0;
+  font-size: 13px;
+  color: #b9c6d6;
+}
+
+.dock-card {
+  padding: 10px 0;
+  border-bottom: 1px solid #1e2731;
+}
+
+.dock-card__head {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.dock-card__name {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.dock-card__hint {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #a9b7c8;
+}
+
+/* Estado nunca depende só de cor: vem sempre com sinal e palavra. */
+.dock-badge {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  font-size: 12px;
+  color: #b9c6d6;
+  white-space: nowrap;
+}
+
+.dock-badge--ativo {
+  color: #8fe3b0;
+}
+
+.dock-badge--erro {
+  color: var(--error);
+}
+
+.dock-badge--espera {
+  color: #f0d48a;
+}
+
+.dock-field {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-top: 8px;
+  font-size: 12px;
+}
+
+.dock-field__label {
+  flex: none;
+  min-width: 86px;
+  color: #9fb0c4;
+}
+
+.dock-field__hint {
+  flex: 1 0 100%;
+  font-size: 11px;
+  color: #8697a9;
+}
+
+.dock-input {
+  flex: 1;
+  min-width: 0;
+  padding: 5px 8px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text);
+  background: #131a22;
+  border: 1px solid #2c3743;
+  border-radius: 5px;
+}
+
+.dock-input--num {
+  flex: none;
+  width: 82px;
+}
+
+.dock-acoes {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.dock-btn {
+  padding: 5px 10px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
+  background: #1b242e;
+  border: 1px solid #2c3743;
+  border-radius: 5px;
+}
+
+.dock-btn[disabled],
+.dock-check[disabled],
+.dock-auto[disabled] {
+  color: #7d8b9b;
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.dock-lista {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.dock-lista dt {
+  color: #9fb0c4;
+}
+
+.dock-lista dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Ausência é dita, não desenhada como se fosse medida. */
+.dock-ausente {
+  font-style: italic;
+  color: #8697a9;
+}
+
+.dock-legenda {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #1e2731;
+}
+
+.dock-legenda summary {
+  font-size: 13px;
+  color: #9fb0c4;
+  cursor: pointer;
+}
+
+.dock-legenda__texto {
+  margin: 8px 0 0;
+  font: 12px/1.5 ui-monospace, 'Cascadia Code', monospace;
+  color: #cdd8e5;
+  white-space: pre-wrap;
+}
+
+.dock-footer {
+  padding: 10px 14px;
+  border-top: 1px solid #26303c;
+}
+
+.dock-auto {
+  width: 100%;
+  padding: 8px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text);
+  cursor: pointer;
+  background: #1b242e;
+  border: 1px solid #2c3743;
+  border-radius: 6px;
+}
+
+.dock-auto--ativo {
+  color: #0b1016;
+  background: #9be4fc;
+  border-color: #9be4fc;
+}
+
+/* --- estados do dock ------------------------------------------------------- */
+
+.dock-aviso {
+  margin: 0;
+  padding: 8px 14px;
+  font-size: 12px;
+  color: #f0d48a;
+  background: rgb(60 48 20 / 45%);
+  border-bottom: 1px solid #3d3421;
+}
+
+.dock-aviso--inline {
+  margin-bottom: 10px;
+  border: 1px solid #3d3421;
+  border-radius: 6px;
+}
+
+.dock-erro {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--error);
+}
+
+.dock-conflito {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: #f0d48a;
+}
+
+/* A confirmação da gravação é um passo à parte, e parece um: é o clique nela que
+   autoriza a persistência da credencial. */
+.dock-confirmar {
+  margin-top: 10px;
+  padding: 10px;
+  background: rgb(60 30 34 / 40%);
+  border: 1px solid #5a3a40;
+  border-radius: 6px;
+}
+
+.dock-confirmar__texto {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: #ffd9e0;
+}
+
+.dock-btn--perigo {
+  color: #0b1016;
+  background: #ff9db1;
+  border-color: #ff9db1;
+}
+
+.dock-lista__porque {
+  font-size: 11px;
+  color: #6f7f92;
+}
+
+/* A face do painel do provedor.
+
+   Ela não é uma janela sobre a cena: é a superfície de leitura da placa, projetada em
+   pixels pelo Atlas e reposicionada a cada quadro. Por isso não tem borda de painel,
+   não tem título de sistema e não tem sombra que a destaque do fundo — o que a
+   destaca é a própria placa, que continua sendo desenhada em WebGL por baixo.
+
+   Enquanto ela existe, o texto 3D daquele painel não é desenhado. Uma superfície, um
+   desenho: é o mesmo invariante que a placa da frente sustenta ao expandir. */
+.face {
+  /* Tinta clara é o caso comum: quase toda placa é escura. */
+  --face-tinta: #eef4fb;
+  --face-tinta-fraca: #c3d2e2;
+  --face-alerta: #ffc2cf;
+  --face-ground: rgb(9 14 20 / 84%);
+  --face-borda: #46566a;
+  --face-veu: rgb(7 11 16 / 46%);
+
+  position: fixed;
+  z-index: 9;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  font-size: calc(13px * var(--face-escala, 1));
+  line-height: 1.35;
+  color: var(--face-tinta);
+}
+
+/* Sem isto o atributo `hidden` não esconde nada.
+
+   `[hidden]` vale por `display: none` na folha do navegador, e a regra acima declara
+   `display: flex` com especificidade maior — fechar a face deixava o formulário fixo na
+   tela, viajando junto com a câmera enquanto o mundo se movia por baixo. */
+.face[hidden] {
+  display: none;
+}
+
+/* Placa clara — o verde do nvidia, por exemplo — inverte a tinta em vez de ganhar um
+   retângulo escuro por cima. Tapar a placa apagaria justamente a cor que diz de quem
+   é o painel; a decisão sai da luminosidade do token, em `palette.inkOn`. */
+.face[data-tinta='escura'] {
+  --face-tinta: #0c1218;
+  --face-tinta-fraca: #33414f;
+  --face-alerta: #6d1226;
+  --face-ground: rgb(255 255 255 / 74%);
+  --face-borda: rgb(12 18 24 / 42%);
+  --face-veu: rgb(255 255 255 / 40%);
+}
+
+.face__corpo {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: calc(0.3em);
+  /* `safe` porque centrar corta pelo topo quando o conteúdo transborda: a face de um
+     trabalhador é mais alta que a de um provedor, e sem isto as primeiras frases
+     ficavam acima da área visível, inalcançáveis inclusive pela rolagem. */
+  justify-content: safe center;
+  padding: 0 0.6em;
+  overflow-y: auto;
+
+  /* Um véu, não um fundo.
+
+     A placa é translúcida de propósito — 0,74 —, e o que passa atrás dela inclui o
+     texto de painéis vizinhos. Para ler basta afastar um pouco esse ruído; tapar a
+     placa com um retângulo opaco apagaria a cor do domínio e devolveria à cena o
+     painel-janela que a ADR-002 tirou dela.
+
+     O degradê é elíptico porque a silhueta não é retangular: um véu de bordas retas
+     desenharia os cantos de um retângulo dentro do hexágono, e a forma — que é o que
+     diz o tipo da entidade — passaria a ter duas silhuetas. */
+  background: radial-gradient(
+    ellipse 78% 72% at 50% 50%,
+    var(--face-veu) 55%,
+    transparent 100%
+  );
+}
+
+.face__topo {
+  display: flex;
+  gap: 0.6em;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.face__nome {
+  margin: 0;
+  font-size: 1.15em;
+  font-weight: 600;
+}
+
+.face__marca {
+  display: inline-flex;
+  gap: 0.35em;
+  align-items: center;
+  font-size: 0.85em;
+  color: var(--face-tinta-fraca);
+  white-space: nowrap;
+}
+
+.face__marca--ativo {
+  color: #2f7d52;
+}
+
+.face__marca--erro {
+  color: #8c1f33;
+}
+
+.face__marca--espera {
+  color: #6b5312;
+}
+
+/* Sobre placa escura as mesmas três marcas invertem, pelo mesmo motivo do texto. */
+.face:not([data-tinta='escura']) .face__marca--ativo {
+  color: #8fe3b0;
+}
+
+.face:not([data-tinta='escura']) .face__marca--erro {
+  color: var(--error);
+}
+
+.face:not([data-tinta='escura']) .face__marca--espera {
+  color: #f0d48a;
+}
+
+.face__linha {
+  margin: 0;
+  font-size: 0.85em;
+  color: var(--face-tinta);
+}
+
+.face__linha--forte {
+  font-weight: 600;
+}
+
+.face__linha--fraca {
+  font-size: 0.78em;
+  color: var(--face-tinta-fraca);
+}
+
+.face__nota {
+  margin: 0;
+  font-size: 0.8em;
+  color: var(--face-alerta);
+}
+
+.face__campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2em;
+  margin-top: 0.2em;
+}
+
+.face__campo-rotulo {
+  font-size: 0.78em;
+  color: var(--face-tinta-fraca);
+}
+
+/* Campo e botões ganham fundo próprio: eles são a única parte da face que não é
+   leitura, e precisam parecer alcançáveis sobre uma placa translúcida. */
+.face__entrada {
+  width: 100%;
+  padding: 0.3em 0.5em;
+  font: inherit;
+  font-size: 0.9em;
+  color: var(--face-tinta);
+  background: var(--face-ground);
+  border: 1px solid var(--face-borda);
+  border-radius: 4px;
+}
+
+/* O stepper não ocupa a linha inteira: ele carrega um número de um dígito, e um campo
+   largo para um dígito lê como campo de texto vazio. */
+.face__entrada--num {
+  width: 5.5em;
+}
+
+.face__acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4em;
+  margin-top: 0.2em;
+}
+
+.face__botao {
+  padding: 0.3em 0.6em;
+  font: inherit;
+  font-size: 0.8em;
+  color: var(--face-tinta);
+  cursor: pointer;
+  background: var(--face-ground);
+  border: 1px solid var(--face-borda);
+  border-radius: 4px;
+}
+
+.face__botao[disabled] {
+  color: var(--face-tinta-fraca);
+  cursor: not-allowed;
+  opacity: 0.75;
+}
+
+.face__botao--perigo {
+  color: #0b1016;
+  background: #ff9db1;
+  border-color: #ff9db1;
+}
+
+.face__entrada:focus-visible,
+.face__botao:focus-visible {
+  outline: 2px solid #9be4fc;
+  outline-offset: 1px;
+}
+
+.face__confirmar {
+  padding: 0.4em 0.5em;
+  background: rgb(52 24 30 / 78%);
+  border: 1px solid #5a3a40;
+  border-radius: 5px;
+}

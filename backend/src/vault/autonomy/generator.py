@@ -523,3 +523,4 @@ def _trecho_de_lacunas(body: str) -> str:
             if texto:
                 captura.append(texto)
     return " ".join(captura).strip()
+

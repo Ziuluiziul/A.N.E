@@ -1,0 +1,75 @@
+"""Quórum multimodelo: conclusão estruturada, voto independente e decisão auditável."""
+
+from vault.quorum.engine import (
+    MIN_FAMILIES,
+    MIN_PROVIDERS,
+    MIN_VALID_VOTES,
+    UNVERIFIED_GATEWAY_PROVIDERS,
+    decide_panel,
+    provider_counts_for_quorum,
+)
+from vault.quorum.models import (
+    DecisionStatus,
+    EvidenceAssessment,
+    Panel,
+    PanelMember,
+    PanelTask,
+    ParseResult,
+    Proposal,
+    QuorumDecision,
+    RecommendedAction,
+    StructuralFailure,
+    Vote,
+    VoteDecision,
+)
+from vault.quorum.parser import SanitizedResponse, parse_vote, strip_reasoning, vote_contract
+from vault.quorum.proposal import (
+    CORPUS_PATCH_ALLOW_CREATE_KEY,
+    CORPUS_PATCH_ALLOWED_TARGETS_KEY,
+    CORPUS_PATCH_BASE_KEY,
+    PATCH_DIGEST_KEY,
+    ParsedCorpusPatch,
+    ProposalEnvelopeError,
+    canonical_patch_response,
+    corpus_patch_prompt,
+    parse_corpus_patch,
+)
+from vault.quorum.store import QuorumStore, QuorumStoreError
+from vault.quorum.synthesis import resolve_with_synthesis
+
+__all__ = [
+    "MIN_FAMILIES",
+    "MIN_PROVIDERS",
+    "MIN_VALID_VOTES",
+    "UNVERIFIED_GATEWAY_PROVIDERS",
+    "CORPUS_PATCH_BASE_KEY",
+    "CORPUS_PATCH_ALLOW_CREATE_KEY",
+    "CORPUS_PATCH_ALLOWED_TARGETS_KEY",
+    "PATCH_DIGEST_KEY",
+    "DecisionStatus",
+    "EvidenceAssessment",
+    "Panel",
+    "PanelMember",
+    "PanelTask",
+    "ParsedCorpusPatch",
+    "ParseResult",
+    "Proposal",
+    "ProposalEnvelopeError",
+    "QuorumDecision",
+    "QuorumStore",
+    "QuorumStoreError",
+    "RecommendedAction",
+    "SanitizedResponse",
+    "StructuralFailure",
+    "Vote",
+    "VoteDecision",
+    "canonical_patch_response",
+    "corpus_patch_prompt",
+    "decide_panel",
+    "provider_counts_for_quorum",
+    "parse_vote",
+    "parse_corpus_patch",
+    "resolve_with_synthesis",
+    "strip_reasoning",
+    "vote_contract",
+]

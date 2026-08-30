@@ -127,7 +127,7 @@ class ControlSnapshot(Frozen):
 
 
 class WorkerPatch(Frozen):
-    """Só o que mudou. Campo ausente é \"não mexa\", não \"apague\"."""
+    """Só o que mudou. Campo ausente é "não mexa", não "apague"."""
 
     enabled: bool | None = None
     provider: str | None = Field(default=None, max_length=64)

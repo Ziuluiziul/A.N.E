@@ -51,6 +51,10 @@ class Settings(BaseSettings):
     openrouter_api_key: SecretStr | None = None
     nous_api_key: SecretStr | None = None
 
+    # Exceção operacional explícita para contas OpenRouter estritamente free-tier
+    # cuja chave está sem teto configurado. O modo forte (teto USD 0 e BYOK
+    # incluído) continua sendo o padrão; ligar isto não relaxa nenhuma guarda da
+    # requisição nem aceita uma conta que `/key` não marque como gratuita.
     openrouter_allow_uncapped_free_tier: bool = Field(
         default=False,
         validation_alias="OPENROUTER_ALLOW_UNCAPPED_FREE_TIER",
@@ -59,6 +63,9 @@ class Settings(BaseSettings):
     google_workspace_client_secret_file: Path | None = None
     google_workspace_token_file: Path | None = None
 
+    # O mesmo arquivo que `env_file` lê, agora também nomeável como campo. A escrita
+    # de credencial precisa de um caminho que o teste possa apontar para um diretório
+    # temporário; sem isso, testar a gravação exigiria escrever no arquivo real.
     secrets_file: Path = Field(
         default=SECRETS_FILE,
         validation_alias=AliasChoices("VAULT_SECRETS_FILE", "ANE_SECRETS_FILE"),
@@ -73,21 +80,32 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("VAULT_RUNTIME_DIR", "ANE_RUNTIME_DIR"),
     )
 
+    # Camada operacional sintética. Só nasce de pedido explícito: nunca é consequência
+    # de o corpus falhar, e a projeção sempre declara que a origem é demonstração.
     demo_operational: bool = Field(
         default=False,
         validation_alias=AliasChoices("VAULT_DEMO_OPERATIONAL", "ANE_DEMO_OPERATIONAL"),
     )
 
+    # Teto de chamadas externas por execução do orquestrador. É o limite que não
+    # depende de header nenhum, e o único que o mantenedor controla diretamente.
+    # Passar dele exige decisão humana, não ajuste de código.
     work_max_calls: int = Field(
         default=6,
         validation_alias=AliasChoices("VAULT_WORK_MAX_CALLS", "ANE_WORK_MAX_CALLS"),
     )
 
+    # Tarefas autônomas simultâneas por processo. Cada quórum consome ~4 chamadas;
+    # o teto efetivo continua sendo work_max_calls.
     worker_concurrency: int = Field(
         default=3,
         validation_alias=AliasChoices("VAULT_WORKER_CONCURRENCY", "ANE_WORKER_CONCURRENCY"),
     )
 
+    # Chamadas simultâneas por provedor dentro deste processo. O mapa é o piso;
+    # o worker sobe até o RPM documentado. Zero desativa novas alocações sem
+    # apagar credencial nem evidência de sonda. O teto 512 cabe dezenas/centenas
+    # em voo (A.N.E); 64 matava a morfologia.
     provider_concurrency: dict[str, int] = Field(
         default_factory=dict,
         validation_alias=AliasChoices(

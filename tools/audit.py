@@ -241,6 +241,8 @@ def parse_frontmatter(text: str, path: Path) -> ParsedFrontmatter:
             )
         )
 
+    # A Política exige reconferência na fonte viva depois de `review_after`. Vencido
+    # é defeito de categoria própria — depende do calendário, e não da forma da nota.
     expirations: tuple[Finding, ...] = ()
     if "review_after" in parsed_dates and parsed_dates["review_after"] < date.today():
         expirations = (
@@ -416,6 +418,10 @@ def _display_finding(root: Path, finding: Finding) -> str:
     return f"{path}:{finding.line}: {finding.message}"
 
 
+# `CLAIM_ID` é ancorado em `^...$` para validar um identificador isolado; contar
+# ocorrências dentro da linha de tabela exige a forma solta. Usar a ancorada aqui fazia a
+# contagem devolver zero para qualquer nota, e a guarda perdia justamente o sinal mais
+# importante — foi o que aconteceu na primeira versão, que só acusava wikilink e bytes.
 CLAIM_ID_NA_LINHA = re.compile(r"CLM-[A-Z0-9]+-[A-Z0-9]+-[0-9]{3}")
 
 
@@ -472,7 +478,7 @@ def reducoes_desde(root: Path, ref: str) -> list[tuple[str, str]] | None:
         relativo = caminho.relative_to(repo).as_posix()
         antes = _texto_na_referencia(repo, ref, relativo)
         if antes is None:
-            continue
+            continue  # nota nova não reduz nada
         c0, w0, b0 = _volume_da_nota(antes)
         c1, w1, b1 = _volume_da_nota(caminho.read_text(encoding="utf-8"))
         quedas = []
@@ -524,7 +530,7 @@ def audit(root: Path, *, contra: str | None = None) -> int:
         fm_kinds[path] = parsed.fields.get("kind")
         if parsed.findings:
             fm_invalid_files.add(path)
-        frontmatter_findings.extend(parsed.findings)
+            frontmatter_findings.extend(parsed.findings)
         review_expired.extend(parsed.expirations)
         for alias in _aliases(parsed.raw):
             aliases[alias] = path.stem
@@ -573,6 +579,8 @@ def audit(root: Path, *, contra: str | None = None) -> int:
         path.stem for path in files if path.stem not in linked_to and path.stem != "Índice"
     )
 
+    # Esta composição é também usada pela projeção. Não alterar sem versionar o
+    # contrato e atualizar o teste de concordância.
     manifest = "\n".join(
         f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.relative_to(root)}"
         for path in files
