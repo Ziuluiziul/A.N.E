@@ -1,0 +1,14 @@
+30dd91b 2026-08-14  Conserte o --json do ledger, que quebrava na primeira execução.
+58fde36 2026-08-14  Deixe o handoff de volta ao Opus com o que esta sessão fechou.
+3fd3f09 2026-08-14  Tire o OpenRouter impossível da seleção e não aposente voto ilegível.
+d2765e8 2026-08-14  Pergunte se o alvo mudou, não se o HEAD andou.
+30aadfc 2026-08-14  Passe o bastão ao Grok 4.6 com a janela de promoção medida.
+5077733 2026-08-14  Leia de volta os 1640 eventos que o sistema já tinha gravado e jogado fora.
+227102b 2026-08-14  Registre a frente morfogênica e a decisão de instrumentar antes de emergir.
+d8b5f5a 2026-08-14  Diga o nome do alvo na régua, e separe trabalhador de provedor e MOC.
+ddf465e 2026-08-14  Freie o amplificador de divergência que não pode tocar o corpus.
+1328e36 2026-08-14  Deixe envelope inválido na fila e aceite o JSON que já era o patch.
+30eedfc 2026-08-14  Recuse replace que apaga a nota e faça o dry-run correr as guardas reais.
+d32ea67 2026-08-14  Pare de gastar tentativas na mesma conta morta e reabra o blocked operacional.
+4818c87 2026-08-14  Dê movimento semântico e referências fixas ao Atlas
+14ed6d8 2026-08-14  Distribua chamadas pela capacidade comprovada dos provedores

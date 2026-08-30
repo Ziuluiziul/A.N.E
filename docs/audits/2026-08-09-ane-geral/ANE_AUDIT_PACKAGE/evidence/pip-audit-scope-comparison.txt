@@ -1,0 +1,25 @@
+pip-audit scope comparison
+
+Wrong scope for this project:
+
+  uvx --cache-dir /tmp/ane-audit-uv-cache pip-audit --format=json
+
+This audits the ephemeral uvx environment containing pip-audit itself and reported no
+known vulnerability. It is not evidence about the repository virtual environment.
+
+Project scope used:
+
+  UV_CACHE_DIR=/tmp/ane-audit-uv-cache uv run --with pip-audit pip-audit --format=json
+
+Observed:
+
+  exit code: 1
+  package: cryptography
+  installed/resolved version: 49.0.0
+  advisory: PYSEC-2026-3552
+  aliases: GHSA-g6cj-pr64-35w5, CVE-2026-69247
+  fixed version listed by scanner: 50.0.0
+
+The complete safe JSON is pip-audit-venv.json. The application was searched for the
+affected PKCS#7 decrypt methods and no call site was found; presence of an affected
+version is observed, exploitability in this application is not.

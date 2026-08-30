@@ -1,7 +1,5 @@
 """Escolhe onde cada tarefa roda e executa sem esconder nada.
 
-from itertools import combinations, permutations
-
 Duas regras governam a escolha, e as duas existem para o mesmo fim — que o corpus não
 fique refém de um modelo:
 
@@ -12,9 +10,14 @@ fique refém de um modelo:
    três instâncias do mesmo modelo concordaria consigo mesmo e o quórum leria isso
    como consenso.
 
-Sobre falha: não existe retry dentro da execução. Um endpoint que falhou fica de fora
-do resto **deste** lote — insistir gastaria a cota que os outros ainda vão usar — e a
-execução seguinte reavalia do zero, com o registro atualizado na mão.
+Sobre falha: não existe retry escondido dentro da execução. Um endpoint que falhou
+fica de fora do resto **deste** lote — insistir gastaria a cota que os outros ainda
+vão usar — e a execução seguinte reavalia do zero, com o registro atualizado na mão.
+
+Exceção explícita: JSON truncado com corpo reemite a mesma atribuição uma vez, mesmo
+teto de tokens; se ainda falhar, o endpoint sai do lote e o próximo proponente tenta.
+Envelope vazio após think (final zerado) não repara — queima o endpoint e segue.
+Schema, id e ambiguidade abortam. Mérito (admission, unfit) e 429 não entram aqui.
 """
 
 from __future__ import annotations
@@ -60,10 +63,13 @@ from vault.quorum import (
     QuorumDecision,
     QuorumStore,
     QuorumStoreError,
+    SanitizedResponse,
     StructuralFailure,
     canonical_patch_response,
     corpus_patch_prompt,
     decide_panel,
+    envelope_needs_repair,
+    envelope_repair_prompt,
     parse_corpus_patch,
     parse_vote,
     provider_counts_for_quorum,
@@ -77,7 +83,7 @@ from vault.work.call_gate import ProviderCallDisabled, ProviderCallGate
 from vault.work.capacity import CapacityHints
 from vault.work.quotas import EndpointLimits, QuotaLedger, RunBudget
 from vault.work.store import WorkStore
-from vault.work.tasks import Assignment, Task, WorkResult
+from vault.work.tasks import MAX_PROMPT_CHARS, Assignment, Task, WorkResult
 
 # Estimativa grosseira só para a janela de tokens: quatro caracteres por token é
 # aproximação conhecida e assumida. Ela superestima em português com acento, e
@@ -319,6 +325,14 @@ class InvalidProposalEnvelope(QuorumExecutionError):
     """O proponente não entregou um CorpusPatch. Forma, não veredito."""
 
 
+def _empty_after_think(sanitized: SanitizedResponse, error: BaseException) -> bool:
+    """Final em branco após think, ou decoder de documento vazio — sem reparo."""
+    if not sanitized.final_response.strip():
+        return True
+    texto = str(error).casefold()
+    return "zero-length" in texto or "empty document" in texto
+
+
 class PatchAdmissionError(QuorumExecutionError):
     """O patch nunca poderia ser promovido — recusa determinística pré-quórum.
 
@@ -361,7 +375,13 @@ class QuorumOrchestrator:
     _attempted_endpoints: set[str] = field(default_factory=set, init=False)
 
     async def create_panel(self, task: Task) -> Panel:
-        """Escolhe um proponente, gera a proposta final e monta três revisores."""
+        """Escolhe um proponente, gera a proposta final e monta três revisores.
+
+        Envelope vazio após think queima o endpoint e segue no próximo proponente.
+        JSON truncado com corpo ganha um reparo no mesmo endpoint; se falhar de
+        novo, o lote passa adiante. Schema, id e ambiguidade ainda abortam. Não
+        se sobe ``max_output_tokens``.
+        """
         patch_base_raw = task.context.get(CORPUS_PATCH_BASE_KEY)
         if patch_base_raw is not None and (
             not isinstance(patch_base_raw, str)
@@ -396,10 +416,16 @@ class QuorumOrchestrator:
             context=proposal_context,
         )
         last_unavail = ""
+        last_envelope: InvalidProposalEnvelope | None = None
+        result: WorkResult | None = None
+        sanitized: SanitizedResponse | None = None
+        parsed_patch = None
         while True:
             profiles = self._callable_profiles()
             proposer_assignment, refusal = self._select_proposer(proposal_task, profiles)
             if proposer_assignment is None:
+                if last_envelope is not None:
+                    raise last_envelope
                 raise PanelUnavailableError(last_unavail or refusal)
 
             proposer_profile = self._profile(proposer_assignment.key)
@@ -408,15 +434,73 @@ class QuorumOrchestrator:
             sanitized = strip_reasoning(result.text)
             self._record_work(self._without_reasoning(result, sanitized))
             self._emit_evidence(result, reasoning_removed=sanitized.reasoning_block_removed)
-            if result.ok:
+            if not result.ok:
+                detail = result.detail or result.outcome
+                if result.outcome == "rate_limited":
+                    self._burn_provider(proposer_assignment.provider)
+                last_unavail = f"proponente {proposer_assignment.key} indisponível: {detail}"
+                continue
+            if patch_base is None:
                 break
-            detail = result.detail or result.outcome
-            if result.outcome == "rate_limited":
-                self._burn_provider(proposer_assignment.provider)
-            last_unavail = (
-                f"proponente {proposer_assignment.key} indisponível: {detail}"
-            )
-            continue
+
+            envelope_error: ProposalEnvelopeError | None = None
+            try:
+                parsed_patch = parse_corpus_patch(
+                    result.text,
+                    expected_proposal_id=proposal_id,
+                    expected_base_commit=patch_base,
+                )
+            except ProposalEnvelopeError as error:
+                envelope_error = error
+                parsed_patch = None
+            if parsed_patch is not None:
+                break
+            assert envelope_error is not None
+            if _empty_after_think(sanitized, envelope_error):
+                self._failed_endpoints.add(proposer_assignment.key)
+                last_envelope = InvalidProposalEnvelope(
+                    f"proponente {proposer_assignment.key} produziu patch inválido: "
+                    f"{envelope_error}"
+                )
+                last_unavail = (
+                    f"proponente {proposer_assignment.key} envelope vazio após raciocínio"
+                )
+                continue
+            if not envelope_needs_repair(envelope_error):
+                raise InvalidProposalEnvelope(
+                    f"proponente {proposer_assignment.key} produziu patch inválido: "
+                    f"{envelope_error}"
+                ) from envelope_error
+            # Uma reemissão, mesmo endpoint, mesmo teto de tokens: completa o
+            # JSON truncado. Se ainda falhar, o lote segue no próximo proponente.
+            try:
+                result, sanitized = await self._repair_proposal_envelope(
+                    proposer_assignment,
+                    adapter,
+                    proposal_task,
+                    failed_text=result.text,
+                    error=envelope_error,
+                    proposal_id=proposal_id,
+                    base_commit=patch_base,
+                    original_request=task.prompt,
+                )
+                parsed_patch = parse_corpus_patch(
+                    result.text,
+                    expected_proposal_id=proposal_id,
+                    expected_base_commit=patch_base,
+                )
+            except (ProposalEnvelopeError, InvalidProposalEnvelope) as error:
+                self._failed_endpoints.add(proposer_assignment.key)
+                last_envelope = InvalidProposalEnvelope(
+                    f"proponente {proposer_assignment.key} produziu patch inválido: {error}"
+                )
+                last_unavail = (
+                    f"proponente {proposer_assignment.key} envelope truncado após reparo"
+                )
+                continue
+            break
+        if result is None or sanitized is None:
+            raise QuorumExecutionError("proponente não produziu resposta")
         # Proposta textual sem nada fora do raciocínio acabou aqui: não há artefato a
         # recuperar. Quando a tarefa exige patch, quem decide é `parse_corpus_patch`,
         # que ainda pode achar o objeto fechado dentro do bloco descartado.
@@ -430,16 +514,7 @@ class QuorumOrchestrator:
         reasoning_detected = sanitized.reasoning_block_detected
         reasoning_removed = sanitized.reasoning_block_removed
         if patch_base is not None:
-            try:
-                parsed_patch = parse_corpus_patch(
-                    result.text,
-                    expected_proposal_id=proposal_id,
-                    expected_base_commit=patch_base,
-                )
-            except ProposalEnvelopeError as error:
-                raise InvalidProposalEnvelope(
-                    f"proponente {proposer_assignment.key} produziu patch inválido: {error}"
-                ) from error
+            assert parsed_patch is not None
             patch = self._canonicalize_targets(task, parsed_patch.patch)
             self._assert_patch_scope(
                 task,
@@ -572,6 +647,76 @@ class QuorumOrchestrator:
         )
         self._planned_votes[panel.id] = assignments
         return panel
+
+    async def _repair_proposal_envelope(
+        self,
+        proposer_assignment: Assignment,
+        adapter: ProviderAdapter,
+        proposal_task: Task,
+        *,
+        failed_text: str,
+        error: ProposalEnvelopeError,
+        proposal_id: str,
+        base_commit: str,
+        original_request: str,
+    ) -> tuple[WorkResult, SanitizedResponse]:
+        """Pede ao mesmo proponente que complete/reemita o JSON. Teto de saída igual."""
+        repair_prompt = envelope_repair_prompt(
+            error=str(error),
+            failed_response=failed_text,
+            proposal_id=proposal_id,
+            base_commit=base_commit,
+            original_request=original_request,
+            original_prompt=proposal_task.prompt,
+        )
+        if len(repair_prompt) > MAX_PROMPT_CHARS:
+            overflow = len(repair_prompt) - MAX_PROMPT_CHARS + 32
+            repair_prompt = envelope_repair_prompt(
+                error=str(error),
+                failed_response=failed_text[: max(len(failed_text) - overflow, 0)],
+                proposal_id=proposal_id,
+                base_commit=base_commit,
+                original_request=original_request,
+                original_prompt=proposal_task.prompt,
+            )
+            repair_prompt = repair_prompt[:MAX_PROMPT_CHARS]
+        repair_task = Task(
+            kind=proposal_task.kind,
+            role_name=proposal_task.role_name,
+            prompt=repair_prompt,
+            id=proposal_task.id,
+            created_at=proposal_task.created_at,
+            max_output_tokens=proposal_task.max_output_tokens,
+            context=proposal_task.context,
+        )
+        repair_assignment = Assignment(
+            task=repair_task,
+            provider=proposer_assignment.provider,
+            endpoint_id=proposer_assignment.endpoint_id,
+            reason="envelope_retry=true; reparo explícito do CorpusPatch",
+        )
+        result = await self._execute_call(repair_assignment, adapter)
+        sanitized = strip_reasoning(result.text)
+        recorded = self._without_reasoning(result, sanitized)
+        recorded = replace(
+            recorded,
+            detail=(
+                f"{recorded.detail}; envelope_retry=true"
+                if recorded.detail
+                else "envelope_retry=true"
+            ),
+        )
+        self._record_work(recorded)
+        self._emit_evidence(
+            result,
+            reasoning_removed=sanitized.reasoning_block_removed,
+            envelope_retry=True,
+        )
+        if not result.ok:
+            raise InvalidProposalEnvelope(
+                f"proponente {proposer_assignment.key} produziu patch inválido: {error}"
+            ) from error
+        return result, sanitized
 
     @staticmethod
     def _authorized_targets(task: Task) -> list[str] | None:
@@ -742,9 +887,7 @@ class QuorumOrchestrator:
         faltando = [papel for papel in PANEL_ROLES if papel not in ocupados]
         if not faltando:
             return
-        usados = {voto.reviewer.key for voto in panel.votes} | {
-            panel.proposal.proposer.key
-        }
+        usados = {voto.reviewer.key for voto in panel.votes} | {panel.proposal.proposer.key}
         elegiveis = [
             perfil
             for perfil in self._callable_profiles()
@@ -949,9 +1092,7 @@ class QuorumOrchestrator:
             async with self.call_gate.slot(assignment.provider, assignment.endpoint_id):
                 # O encerramento pode ter sido pedido enquanto esta chamada aguardava vaga.
                 if self.should_stop():
-                    raise QuorumExecutionError(
-                        "encerramento solicitado antes de nova chamada"
-                    )
+                    raise QuorumExecutionError("encerramento solicitado antes de nova chamada")
                 return await self._execute_call_acquired(assignment, adapter)
         except ProviderCallDisabled as error:
             return WorkResult(
@@ -1039,8 +1180,25 @@ class QuorumOrchestrator:
 
         return relay
 
-    def _emit_evidence(self, result: WorkResult, *, reasoning_removed: bool) -> None:
+    def _emit_evidence(
+        self,
+        result: WorkResult,
+        *,
+        reasoning_removed: bool,
+        envelope_retry: bool = False,
+    ) -> None:
         assignment = result.assignment
+        metadata: dict[str, Any] = {
+            "role": assignment.task.role_name,
+            "outcome": result.outcome,
+            "reasoning_removed": reasoning_removed,
+            "narration": self._narrar(
+                f"Resposta de {assignment.task.role_name} registrada como evidência"
+                + (" (bloco de raciocínio removido)." if reasoning_removed else ".")
+            ),
+        }
+        if envelope_retry:
+            metadata["envelope_retry"] = True
         self.emit(
             "evidence_recorded",
             {
@@ -1051,15 +1209,7 @@ class QuorumOrchestrator:
                 "entity": self._entity(assignment.task.context),
                 "before": {"state": result.outcome},
                 "after": {"state": "persisted"},
-                "metadata": {
-                    "role": assignment.task.role_name,
-                    "outcome": result.outcome,
-                    "reasoning_removed": reasoning_removed,
-                    "narration": self._narrar(
-                        f"Resposta de {assignment.task.role_name} registrada como evidência"
-                        + (" (bloco de raciocínio removido)." if reasoning_removed else ".")
-                    ),
-                },
+                "metadata": metadata,
             },
         )
 
@@ -1585,9 +1735,7 @@ async def execute(
                     outcome="skipped",
                     detail=("endpoint já falhou neste lote; não se insiste na mesma execução"),
                 )
-            called = await _call(
-                assignment, adapter, ledger, sanitize, queimados, gate=gate
-            )
+            called = await _call(assignment, adapter, ledger, sanitize, queimados, gate=gate)
         else:
             async with gate.slot(assignment.provider, assignment.endpoint_id):
                 # Outra atribuição pode ter queimado este endpoint enquanto esta

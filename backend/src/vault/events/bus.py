@@ -10,7 +10,8 @@ from vault.events.models import OperationalEvent, OperationalEventDraft
 from vault.events.store import OperationalEventStore, OperationalEventStoreError
 
 POLL_INTERVAL_SECONDS = 0.1
-SNAPSHOT_EVENT_LIMIT = 2_000
+# O primeiro quadro SSE não deve despejar o histórico inteiro; o cliente corta em 160.
+SNAPSHOT_EVENT_LIMIT = 160
 REPLAY_BATCH_LIMIT = 500
 
 
@@ -66,6 +67,7 @@ class OperationalEventBus:
         return event
 
     async def snapshot(self) -> RuntimeSnapshot:
+        # ``load(limit=...)`` com revisão 0 lê a cauda; não bloqueia no jsonl inteiro.
         events = await asyncio.to_thread(self.store.load, limit=SNAPSHOT_EVENT_LIMIT)
         # O cursor precisa vir exatamente do mesmo retrato que será enviado. Um produtor
         # externo pode anexar uma linha entre ``load`` e uma segunda leitura da cauda; se

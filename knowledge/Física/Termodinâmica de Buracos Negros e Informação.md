@@ -54,7 +54,7 @@ Wang e Li calcularam ilhas e Page curve para buracos negros de Kerr em uma confi
 | `CLM-FIS-BHI-002` | Entropia de Bekenstein–Hawking e temperatura Hawking emergem semiclassicamente. | `supported` | Pilares teóricos; radiação Hawking astrofísica não foi detectada diretamente. |
 | `CLM-FIS-BHI-003` | A lei generalizada da termodinâmica vale nos regimes controlados estudados. | `supported` | Forte suporte teórico, não um teorema sem hipóteses para toda gravidade quântica. |
 | `CLM-FIS-BHI-004` | Ilhas e replica wormholes produzem Page curves em modelos controlados. | `model-dependent` | Resultado semiclassico forte, dependente de setups e aproximações específicas. |
-| `CLM-FIS-BHI-005` | O mecanismo microscópico completo da evaporação foi estabelecido. | `open` | Problema de fronteira sem descrição universalmente aceita; buscas via LLMs (nous/stepfun, nvidia/deepseek, nvidia/llama) não proveram evidência para fechamento. |
+| `CLM-FIS-BHI-005` | O mecanismo microscópico completo da evaporação foi estabelecido. | `open` | Problema de fronteira sem descrição universalmente aceita; buscas recentes sem capacidade produtiva adicional em modelos ollama mantêm o status como `open`. |
 
 ## Relações
 

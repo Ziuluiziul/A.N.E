@@ -1,0 +1,109 @@
+A.N.E. — MANIFESTO DA AUDITORIA GERAL
+
+LOCAL DOS ENTREGÁVEIS
+docs/audits/2026-08-09-ane-geral/
+
+JANELA DA AUDITORIA
+abertura:   2026-08-09T23:37:15-03:00
+fechamento: 2026-08-10T00:27:28-03:00
+timezone:   America/Sao_Paulo
+
+BASELINE
+raiz:       /home/ziul/Projetos/vault-autodidata
+branch:     main
+HEAD:       61f2da448b234bde0318237965ac954c2c591c17
+subject:    Faz o painel do raciocínio se comportar como o do conhecimento
+commits:    94
+remote:     nenhum
+
+GIT STATUS DE ABERTURA — capturado antes de criar entregáveis
+ M frontend/src/atlas.ts
+ M frontend/src/composeLayout.ts
+ M frontend/src/main.ts
+ M frontend/src/runtime.ts
+ M frontend/src/runtimeLayer.test.ts
+ M frontend/src/runtimeLayer.ts
+?? docs/PROMPT-AUDITORIA-MESTRE-ANE-GPT-5.6-SOL-2026-08-09.md
+
+GIT STATUS DE FECHAMENTO
+ M frontend/src/atlas.ts
+ M frontend/src/composeLayout.ts
+ M frontend/src/main.ts
+ M frontend/src/runtime.ts
+ M frontend/src/runtimeLayer.test.ts
+ M frontend/src/runtimeLayer.ts
+?? docs/PROMPT-AUDITORIA-MESTRE-ANE-GPT-5.6-SOL-2026-08-09.md
+?? docs/audits/2026-08-09-ane-geral/
+
+PRESERVAÇÃO
+- Os seis arquivos modificados e o prompt não rastreado de abertura foram preservados.
+- Nenhum arquivo preexistente do repositório foi alterado, movido ou apagado.
+- Nenhum commit, push, reset, checkout destrutivo ou escrita em knowledge/ ocorreu.
+- Nenhuma chamada de modelo/provedor foi disparada.
+- ~/.config/vault-autodidata/secrets.env não foi lido, escrito nem rotacionado.
+- Clones, corpora, profiles, caches e runtimes de ensaio ficaram em /tmp e foram removidos.
+- Listeners de auditoria em 8000/8010/5173/5273/9222/9333: zero no fechamento.
+
+AMBIENTE
+Python:        3.13.5
+uv:            0.12.0
+Node:          24.18.1
+pnpm:          11.18.0
+git:           2.47.3
+SO/kernel:     Linux 6.12.101+deb13-amd64 x86_64 GNU/Linux
+bash:          5.2.37
+ripgrep:       14.1.1
+jq:            1.7
+GNU tar:       1.35
+Vite:          8.2.0
+Vitest:        4.1.10
+Google Chrome: 151.0.7922.108
+renderer vivo: ANGLE/Vulkan SwiftShader
+pip-audit:     2.10.1 (executado dentro do ambiente do projeto)
+
+GATES DE FECHAMENTO
+make audit: exit 0; 64 ms; 84 notas; 672 wikilinks; 267 claims; zero defeitos implementados
+make test:  exit 0; 24.251 ms; 392 Python + 302 TypeScript passaram
+make lint:  exit 0; 5.570 ms; ruff + mypy(99 fontes) + eslint passaram
+Nota: Corepack buscou pnpm 11.18.0 no registry durante o gate com cache isolado em /tmp.
+
+DECISÕES
+Alpha readiness:  HOLD
+GitHub readiness: NOT READY
+
+DECISÃO SOBRE KNOWLEDGE/
+O texto de knowledge/ é produto autoral e foi EXCLUÍDO dos dois pacotes compartilháveis.
+Incluíram-se apenas caminhos relativos, tamanhos, hashes e contagens em
+ANE_AUDIT_PACKAGE/metadata/knowledge-structure.txt. Nenhuma licença é inferida dessa
+inclusão estrutural.
+
+ENTREGÁVEIS
+1. ANE_AUDIT_DOSSIER.md
+2. ANE_REPOSITORY_INVENTORY.txt
+3. ANE_AUDIT_EVIDENCE.md
+4. ANE_GITHUB_SANITIZATION.md
+5. ANE_ALPHA_GATE.md
+6. ANE_AUDIT_MANIFEST.txt
+7. ANE_AUDIT_PACKAGE/
+8. ANE_AUDIT_PACKAGE.tar.gz
+9. ANE_REVIEW_SNAPSHOT.tar.gz
+
+SHA-256
+9f478b993317c03b9e574424151c390334ee6a4b96cb018bdf70372e280c641d  ANE_AUDIT_DOSSIER.md
+4ab85631ba9a7340727a6dccf51f41be2f4b3ab4c65a2f3835688dd4e3866cbc  ANE_REPOSITORY_INVENTORY.txt
+7b57da33657a33c840ea9313c3ce84b967f4d3e596344955f06ba2865fd3a6c1  ANE_AUDIT_EVIDENCE.md
+654b2e3c43369a5e85dd0f19f3f0833a65ff85ac64c56fd2981678ff3f2cf5b4  ANE_GITHUB_SANITIZATION.md
+a4f30e5cb2e39dc22b645b7e2bf06c73b2ce7e9dc14b96d70b20e63992f6b91f  ANE_ALPHA_GATE.md
+a1fbcfa506db239ca7229c7b14c95ee51a436a170ab99c426b44c55a93d2a966  ANE_AUDIT_PACKAGE/CONTENT_SHA256SUMS.txt
+b37bf8e5ef5ee878c6b3e1df0f8b50545c18fdaf64a4b689f6e84b85914f4c85  ANE_AUDIT_PACKAGE.tar.gz
+e8f5b138a3d0aad8b46f330701a82d4a74b2cd230673e3062a439f071f4bebb2  ANE_REVIEW_SNAPSHOT.tar.gz
+
+O hash do próprio ANE_AUDIT_MANIFEST.txt não é embutido porque alteraria o arquivo e
+invalidaria o valor por autorreferência. Seu SHA-256 final é publicado no handoff da
+auditoria. Cada arquivo do diretório ANE_AUDIT_PACKAGE/ tem hash individual em
+CONTENT_SHA256SUMS.txt e foi verificado com sha256sum -c antes do empacotamento.
+
+CONTEÚDO EXCLUÍDO DOS PACOTES
+.git; knowledge/*.md; runtime bruto; secrets/.env/OAuth/tokens; candidatas sintéticas;
+paths pessoais; e-mail autoral; dependências instaladas; caches; builds; ZIP e auditoria
+visual antiga; tools/atlas.svg sem proveniência registrada.

@@ -4,7 +4,7 @@ domain: física
 kind: nota
 status: active
 epistemic_status: established
-updated: 2026-07-16
+updated: 2026-08-30
 verified_at: 2026-07-16
 ---
 
@@ -57,7 +57,7 @@ Um estado puro global pode produzir estado reduzido misto. Emaranhamento é corr
 Interação com um ambiente correlaciona graus de liberdade do sistema e do ambiente. Na base selecionada pela interação, termos fora da diagonal de `ρ_S` podem ser suprimidos:
 
 $$
-\rho_S(t)=\operatorname{Tr}_E\! ig[U(t)\rho_{SE}(0)U^\dagger(t)\big].
+\rho_S(t)=\operatorname{Tr}_E\! \big[U(t)\rho_{SE}(0)U^\dagger(t)\big].
 $$
 
 Decoerência explica a perda local de interferência e a emergência de bases aproximadamente clássicas. Ela não seleciona, por si só, um único resultado global; por isso não é sinônimo de colapso objetivo.

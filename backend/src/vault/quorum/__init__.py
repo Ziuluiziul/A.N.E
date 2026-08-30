@@ -32,6 +32,8 @@ from vault.quorum.proposal import (
     ProposalEnvelopeError,
     canonical_patch_response,
     corpus_patch_prompt,
+    envelope_needs_repair,
+    envelope_repair_prompt,
     parse_corpus_patch,
 )
 from vault.quorum.store import QuorumStore, QuorumStoreError
@@ -65,6 +67,8 @@ __all__ = [
     "VoteDecision",
     "canonical_patch_response",
     "corpus_patch_prompt",
+    "envelope_needs_repair",
+    "envelope_repair_prompt",
     "decide_panel",
     "provider_counts_for_quorum",
     "parse_vote",

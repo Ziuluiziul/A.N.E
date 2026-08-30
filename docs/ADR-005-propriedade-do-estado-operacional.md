@@ -261,3 +261,9 @@ worker id · legacy x/y/z · runtime x/y/z · delta        →  delta ≤ epsilo
 sai de `with_runtime_quorum`, e a projeção vai de **1302 para 1295 nós**. Sete nós somem da
 projeção e **nada some do Atlas** — é a prova material de que a propriedade mudou de mãos.
 A contagem entra na mensagem do commit.
+
+## Ver também
+
+[ATLAS-SSE.md](ATLAS-SSE.md) — contrato HTTP do tecido runtime. A decisão de
+autoridade desta ADR não muda.
+

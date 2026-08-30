@@ -1,0 +1,932 @@
+{
+  "registros": 1691,
+  "capacidade": [
+    {
+      "chave": "google/gemini-3.6-flash",
+      "tentativas": 91,
+      "ok": 1,
+      "por_classe": {
+        "rate-limit": 57,
+        "votos-validos-insuficientes": 13,
+        "outro": 11,
+        "provedor-indisponivel": 9,
+        "ok": 1
+      },
+      "ultima_falha": "2026-08-14T02:31:09+00:00"
+    },
+    {
+      "chave": "google/gemini-3.5-flash-lite",
+      "tentativas": 84,
+      "ok": 3,
+      "por_classe": {
+        "rate-limit": 29,
+        "votos-validos-insuficientes": 23,
+        "envelope-invalido": 11,
+        "outro": 11,
+        "patch-fora-do-alvo": 7,
+        "ok": 3
+      },
+      "ultima_falha": "2026-08-13T18:10:55+00:00"
+    },
+    {
+      "chave": "groq/groq/compound",
+      "tentativas": 56,
+      "ok": 1,
+      "por_classe": {
+        "rate-limit": 22,
+        "prompt-acima-do-teto": 14,
+        "orcamento-esgotado": 12,
+        "votos-validos-insuficientes": 6,
+        "ok": 1,
+        "outro": 1
+      },
+      "ultima_falha": "2026-08-15T02:40:24+00:00"
+    },
+    {
+      "chave": "groq/groq/compound-mini",
+      "tentativas": 52,
+      "ok": 0,
+      "por_classe": {
+        "rate-limit": 39,
+        "orcamento-esgotado": 5,
+        "votos-validos-insuficientes": 4,
+        "envelope-invalido": 2,
+        "outro": 2
+      },
+      "ultima_falha": "2026-08-15T02:38:06+00:00"
+    },
+    {
+      "chave": "openrouter/nvidia/nemotron-3.5-lightning:free",
+      "tentativas": 51,
+      "ok": 0,
+      "por_classe": {
+        "credencial-impossivel": 49,
+        "envelope-invalido": 1,
+        "votos-validos-insuficientes": 1
+      },
+      "ultima_falha": "2026-08-15T01:21:10+00:00"
+    },
+    {
+      "chave": "google/gemini-3.1-flash-lite",
+      "tentativas": 43,
+      "ok": 0,
+      "por_classe": {
+        "rate-limit": 30,
+        "outro": 8,
+        "provedor-indisponivel": 4,
+        "votos-validos-insuficientes": 1
+      },
+      "ultima_falha": "2026-08-14T03:19:38+00:00"
+    },
+    {
+      "chave": "google/gemini-3.5-flash",
+      "tentativas": 43,
+      "ok": 0,
+      "por_classe": {
+        "rate-limit": 31,
+        "votos-validos-insuficientes": 6,
+        "envelope-invalido": 3,
+        "provedor-indisponivel": 2,
+        "outro": 1
+      },
+      "ultima_falha": "2026-08-14T02:36:12+00:00"
+    },
+    {
+      "chave": "groq/llama-3.3-70b-versatile",
+      "tentativas": 41,
+      "ok": 6,
+      "por_classe": {
+        "rate-limit": 31,
+        "ok": 6,
+        "envelope-invalido": 3,
+        "orcamento-esgotado": 1
+      },
+      "ultima_falha": "2026-08-15T02:06:13+00:00"
+    },
+    {
+      "chave": "groq/qwen/qwen3.6-27b",
+      "tentativas": 21,
+      "ok": 0,
+      "por_classe": {
+        "resposta-vazia": 6,
+        "rate-limit": 5,
+        "outro": 5,
+        "envelope-invalido": 4,
+        "votos-validos-insuficientes": 1
+      },
+      "ultima_falha": "2026-08-13T17:58:11+00:00"
+    },
+    {
+      "chave": "nvidia/deepseek-ai/deepseek-v4-flash-0731",
+      "tentativas": 19,
+      "ok": 5,
+      "por_classe": {
+        "orcamento-esgotado": 10,
+        "ok": 5,
+        "votos-validos-insuficientes": 2,
+        "envelope-invalido": 1,
+        "provedor-indisponivel": 1
+      },
+      "ultima_falha": "2026-08-15T02:40:18+00:00"
+    },
+    {
+      "chave": "groq/llama-3.1-8b-instant",
+      "tentativas": 17,
+      "ok": 7,
+      "por_classe": {
+        "ok": 7,
+        "votos-validos-insuficientes": 5,
+        "envelope-invalido": 4,
+        "outro": 1
+      },
+      "ultima_falha": "2026-08-15T00:16:57+00:00"
+    },
+    {
+      "chave": "groq/allam-2-7b",
+      "tentativas": 14,
+      "ok": 4,
+      "por_classe": {
+        "votos-validos-insuficientes": 7,
+        "ok": 4,
+        "envelope-invalido": 2,
+        "outro": 1
+      },
+      "ultima_falha": "2026-08-15T00:15:39+00:00"
+    },
+    {
+      "chave": "nvidia/meta/llama-3.1-8b-instruct",
+      "tentativas": 14,
+      "ok": 0,
+      "por_classe": {
+        "votos-validos-insuficientes": 7,
+        "orcamento-esgotado": 6,
+        "outro": 1
+      },
+      "ultima_falha": "2026-08-15T02:42:21+00:00"
+    },
+    {
+      "chave": "nvidia/stepfun-ai/step-3.7-flash",
+      "tentativas": 14,
+      "ok": 1,
+      "por_classe": {
+        "resposta-vazia": 7,
+        "orcamento-esgotado": 6,
+        "ok": 1
+      },
+      "ultima_falha": "2026-08-15T02:41:39+00:00"
+    },
+    {
+      "chave": "groq/openai/gpt-oss-120b",
+      "tentativas": 13,
+      "ok": 2,
+      "por_classe": {
+        "votos-validos-insuficientes": 5,
+        "ok": 2,
+        "envelope-invalido": 2,
+        "orcamento-esgotado": 2,
+        "rate-limit": 1,
+        "outro": 1
+      },
+      "ultima_falha": "2026-08-15T00:19:28+00:00"
+    },
+    {
+      "chave": "nvidia/meta/llama-3.2-3b-instruct",
+      "tentativas": 13,
+      "ok": 0,
+      "por_classe": {
+        "tempo-esgotado": 13
+      },
+      "ultima_falha": "2026-08-15T02:42:41+00:00"
+    },
+    {
+      "chave": "nvidia/nvidia/llama-3.3-nemotron-super-49b-v1",
+      "tentativas": 13,
+      "ok": 1,
+      "por_classe": {
+        "orcamento-esgotado": 6,
+        "envelope-invalido": 5,
+        "votos-validos-insuficientes": 1,
+        "ok": 1
+      },
+      "ultima_falha": "2026-08-15T02:41:16+00:00"
+    },
+    {
+      "chave": "nvidia/nvidia/nemotron-3.5-lightning-30b-a3b",
+      "tentativas": 13,
+      "ok": 0,
+      "por_classe": {
+        "orcamento-esgotado": 6,
+        "envelope-invalido": 5,
+        "outro": 2
+      },
+      "ultima_falha": "2026-08-15T02:41:14+00:00"
+    },
+    {
+      "chave": "nvidia/openai/gpt-oss-20b",
+      "tentativas": 13,
+      "ok": 0,
+      "por_classe": {
+        "orcamento-esgotado": 6,
+        "provedor-indisponivel": 4,
+        "votos-validos-insuficientes": 2,
+        "envelope-invalido": 1
+      },
+      "ultima_falha": "2026-08-15T02:36:45+00:00"
+    },
+    {
+      "chave": "groq/openai/gpt-oss-20b",
+      "tentativas": 12,
+      "ok": 1,
+      "por_classe": {
+        "votos-validos-insuficientes": 6,
+        "outro": 3,
+        "ok": 1,
+        "resposta-vazia": 1,
+        "envelope-invalido": 1
+      },
+      "ultima_falha": "2026-08-15T00:19:11+00:00"
+    },
+    {
+      "chave": "nvidia/meta/llama-3.1-70b-instruct",
+      "tentativas": 12,
+      "ok": 0,
+      "por_classe": {
+        "prompt-acima-do-teto": 8,
+        "orcamento-esgotado": 4
+      },
+      "ultima_falha": "2026-08-15T02:06:12+00:00"
+    },
+    {
+      "chave": "nvidia/meta/llama-3.2-11b-vision-instruct",
+      "tentativas": 12,
+      "ok": 0,
+      "por_classe": {
+        "orcamento-esgotado": 11,
+        "envelope-invalido": 1
+      },
+      "ultima_falha": "2026-08-15T02:38:22+00:00"
+    },
+    {
+      "chave": "nvidia/meta/muse-glimmer-30b",
+      "tentativas": 12,
+      "ok": 0,
+      "por_classe": {
+        "orcamento-esgotado": 10,
+        "envelope-invalido": 2
+      },
+      "ultima_falha": "2026-08-15T02:34:30+00:00"
+    },
+    {
+      "chave": "nvidia/minimaxai/minimax-m3",
+      "tentativas": 12,
+      "ok": 0,
+      "por_classe": {
+        "orcamento-esgotado": 10,
+        "votos-validos-insuficientes": 1,
+        "outro": 1
+      },
+      "ultima_falha": "2026-08-15T02:42:27+00:00"
+    },
+    {
+      "chave": "nvidia/nvidia/ising-calibration-1.5-31b",
+      "tentativas": 12,
+      "ok": 0,
+      "por_classe": {
+        "orcamento-esgotado": 8,
+        "votos-validos-insuficientes": 2,
+        "envelope-invalido": 2
+      },
+      "ultima_falha": "2026-08-15T02:31:20+00:00"
+    },
+    {
+      "chave": "nvidia/nvidia/llama-3.1-nemotron-nano-vl-8b-v1",
+      "tentativas": 12,
+      "ok": 0,
+      "por_classe": {
+        "orcamento-esgotado": 4,
+        "outro": 4,
+        "envelope-invalido": 2,
+        "patch-fora-do-alvo": 1,
+        "votos-validos-insuficientes": 1
+      },
+      "ultima_falha": "2026-08-15T02:32:51+00:00"
+    },
+    {
+      "chave": "nvidia/nvidia/nemotron-3-nano-30b-a3b",
+      "tentativas": 12,
+      "ok": 0,
+      "por_classe": {
+        "orcamento-esgotado": 6,
+        "envelope-invalido": 5,
+        "votos-validos-insuficientes": 1
+      },
+      "ultima_falha": "2026-08-15T02:29:16+00:00"
+    },
+    {
+      "chave": "nvidia/nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+      "tentativas": 12,
+      "ok": 0,
+      "por_classe": {
+        "orcamento-esgotado": 5,
+        "envelope-invalido": 4,
+        "votos-validos-insuficientes": 2,
+        "outro": 1
+      },
+      "ultima_falha": "2026-08-15T02:32:32+00:00"
+    },
+    {
+      "chave": "nvidia/nvidia/nemotron-3-super-120b-a12b",
+      "tentativas": 12,
+      "ok": 0,
+      "por_classe": {
+        "envelope-invalido": 5,
+        "orcamento-esgotado": 5,
+        "prompt-acima-do-teto": 1,
+        "votos-validos-insuficientes": 1
+      },
+      "ultima_falha": "2026-08-15T02:30:59+00:00"
+    },
+    {
+      "chave": "nvidia/nvidia/nemotron-3-ultra-550b-a55b",
+      "tentativas": 12,
+      "ok": 0,
+      "por_classe": {
+        "orcamento-esgotado": 7,
+        "envelope-invalido": 2,
+        "votos-validos-insuficientes": 2,
+        "outro": 1
+      },
+      "ultima_falha": "2026-08-15T02:32:29+00:00"
+    },
+    {
+      "chave": "nvidia/nvidia/nemotron-mini-4b-instruct",
+      "tentativas": 12,
+      "ok": 0,
+      "por_classe": {
+        "outro": 7,
+        "orcamento-esgotado": 4,
+        "votos-validos-insuficientes": 1
+      },
+      "ultima_falha": "2026-08-15T02:32:33+00:00"
+    },
+    {
+      "chave": "nvidia/nvidia/nvidia-nemotron-nano-9b-v2",
+      "tentativas": 12,
+      "ok": 0,
+      "por_classe": {
+        "orcamento-esgotado": 8,
+        "envelope-invalido": 2,
+        "outro": 1,
+        "votos-validos-insuficientes": 1
+      },
+      "ultima_falha": "2026-08-15T02:30:04+00:00"
+    },
+    {
+      "chave": "nvidia/openai/gpt-oss-120b",
+      "tentativas": 12,
+      "ok": 0,
+      "por_classe": {
+        "provedor-indisponivel": 12
+      },
+      "ultima_falha": "2026-08-15T02:33:33+00:00"
+    },
+    {
+      "chave": "nvidia/thinkingmachines/inkling",
+      "tentativas": 12,
+      "ok": 0,
+      "por_classe": {
+        "orcamento-esgotado": 9,
+        "resposta-vazia": 2,
+        "envelope-invalido": 1
+      },
+      "ultima_falha": "2026-08-15T02:37:33+00:00"
+    },
+    {
+      "chave": "google/gemma-4-26b-a4b-it",
+      "tentativas": 11,
+      "ok": 0,
+      "por_classe": {
+        "rate-limit": 7,
+        "provedor-indisponivel": 4
+      },
+      "ultima_falha": "2026-08-14T02:37:12+00:00"
+    },
+    {
+      "chave": "ollama/nemotron-3-nano:30b",
+      "tentativas": 11,
+      "ok": 3,
+      "por_classe": {
+        "resposta-vazia": 7,
+        "ok": 3,
+        "provedor-indisponivel": 1
+      },
+      "ultima_falha": "2026-08-14T02:25:31+00:00"
+    },
+    {
+      "chave": "ollama/nemotron-3-super",
+      "tentativas": 9,
+      "ok": 5,
+      "por_classe": {
+        "ok": 5,
+        "resposta-vazia": 2,
+        "provedor-indisponivel": 2
+      },
+      "ultima_falha": "2026-08-13T17:56:44+00:00"
+    },
+    {
+      "chave": "ollama/nemotron-3-ultra",
+      "tentativas": 7,
+      "ok": 2,
+      "por_classe": {
+        "provedor-indisponivel": 5,
+        "ok": 2
+      },
+      "ultima_falha": "2026-08-13T17:57:45+00:00"
+    },
+    {
+      "chave": "google/gemma-4-31b-it",
+      "tentativas": 5,
+      "ok": 0,
+      "por_classe": {
+        "rate-limit": 5
+      },
+      "ultima_falha": "2026-08-14T02:31:08+00:00"
+    },
+    {
+      "chave": "ollama/gpt-oss:20b",
+      "tentativas": 4,
+      "ok": 4,
+      "por_classe": {
+        "ok": 4
+      },
+      "ultima_falha": null
+    },
+    {
+      "chave": "ollama/gemma4:31b",
+      "tentativas": 3,
+      "ok": 3,
+      "por_classe": {
+        "ok": 3
+      },
+      "ultima_falha": null
+    },
+    {
+      "chave": "ollama/gpt-oss:120b",
+      "tentativas": 3,
+      "ok": 3,
+      "por_classe": {
+        "ok": 3
+      },
+      "ultima_falha": null
+    },
+    {
+      "chave": "ollama/minimax-m3",
+      "tentativas": 1,
+      "ok": 0,
+      "por_classe": {
+        "resposta-vazia": 1
+      },
+      "ultima_falha": "2026-08-13T17:42:29+00:00"
+    },
+    {
+      "chave": "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free",
+      "tentativas": 1,
+      "ok": 0,
+      "por_classe": {
+        "votos-validos-insuficientes": 1
+      },
+      "ultima_falha": "2026-08-11T22:32:15+00:00"
+    }
+  ],
+  "aptidao": [
+    {
+      "endpoint": "ollama/gemma4:31b",
+      "role": "critico-epistemologico",
+      "domain": "operacional",
+      "observacoes": 49,
+      "utilizaveis": 49
+    },
+    {
+      "endpoint": "ollama/minimax-m3",
+      "role": "verificador-factual",
+      "domain": "operacional",
+      "observacoes": 49,
+      "utilizaveis": 30
+    },
+    {
+      "endpoint": "groq/qwen/qwen3.6-27b",
+      "role": "revisor-estrutural",
+      "domain": "operacional",
+      "observacoes": 47,
+      "utilizaveis": 16
+    },
+    {
+      "endpoint": "ollama/minimax-m3",
+      "role": "revisor-estrutural",
+      "domain": "operacional",
+      "observacoes": 31,
+      "utilizaveis": 18
+    },
+    {
+      "endpoint": "google/gemini-3.5-flash",
+      "role": "verificador-factual",
+      "domain": "operacional",
+      "observacoes": 24,
+      "utilizaveis": 17
+    },
+    {
+      "endpoint": "google/gemini-3.5-flash-lite",
+      "role": "critico-epistemologico",
+      "domain": "operacional",
+      "observacoes": 24,
+      "utilizaveis": 22
+    },
+    {
+      "endpoint": "groq/llama-3.3-70b-versatile",
+      "role": "critico-epistemologico",
+      "domain": "operacional",
+      "observacoes": 24,
+      "utilizaveis": 24
+    },
+    {
+      "endpoint": "groq/qwen/qwen3.6-27b",
+      "role": "verificador-factual",
+      "domain": "operacional",
+      "observacoes": 24,
+      "utilizaveis": 8
+    },
+    {
+      "endpoint": "nvidia/z-ai/glm-5.2",
+      "role": "revisor-estrutural",
+      "domain": "operacional",
+      "observacoes": 24,
+      "utilizaveis": 20
+    },
+    {
+      "endpoint": "ollama/gemma4:31b",
+      "role": "revisor-estrutural",
+      "domain": "operacional",
+      "observacoes": 14,
+      "utilizaveis": 14
+    },
+    {
+      "endpoint": "groq/llama-3.3-70b-versatile",
+      "role": "revisor-estrutural",
+      "domain": "operacional",
+      "observacoes": 11,
+      "utilizaveis": 10
+    },
+    {
+      "endpoint": "ollama/gemma4:31b",
+      "role": "critico-epistemologico",
+      "domain": "Física",
+      "observacoes": 10,
+      "utilizaveis": 10
+    },
+    {
+      "endpoint": "ollama/minimax-m3",
+      "role": "verificador-factual",
+      "domain": "Física",
+      "observacoes": 10,
+      "utilizaveis": 6
+    },
+    {
+      "endpoint": "google/gemma-4-26b-a4b-it",
+      "role": "verificador-factual",
+      "domain": "operacional",
+      "observacoes": 9,
+      "utilizaveis": 0
+    },
+    {
+      "endpoint": "google/gemma-4-31b-it",
+      "role": "critico-epistemologico",
+      "domain": "operacional",
+      "observacoes": 9,
+      "utilizaveis": 0
+    },
+    {
+      "endpoint": "nvidia/z-ai/glm-5.2",
+      "role": "revisor-estrutural",
+      "domain": "Física",
+      "observacoes": 8,
+      "utilizaveis": 3
+    },
+    {
+      "endpoint": "google/gemini-3.1-flash-lite",
+      "role": "critico-epistemologico",
+      "domain": "operacional",
+      "observacoes": 7,
+      "utilizaveis": 4
+    },
+    {
+      "endpoint": "google/gemini-3.5-flash-lite",
+      "role": "verificador-factual",
+      "domain": "operacional",
+      "observacoes": 7,
+      "utilizaveis": 7
+    },
+    {
+      "endpoint": "groq/llama-3.3-70b-versatile",
+      "role": "critico-epistemologico",
+      "domain": "Física",
+      "observacoes": 7,
+      "utilizaveis": 5
+    },
+    {
+      "endpoint": "groq/qwen/qwen3.6-27b",
+      "role": "verificador-factual",
+      "domain": "Física",
+      "observacoes": 7,
+      "utilizaveis": 2
+    },
+    {
+      "endpoint": "ollama/nemotron-3-nano:30b",
+      "role": "verificador-factual",
+      "domain": "operacional",
+      "observacoes": 7,
+      "utilizaveis": 4
+    },
+    {
+      "endpoint": "ollama/nemotron-3-super",
+      "role": "critico-epistemologico",
+      "domain": "operacional",
+      "observacoes": 7,
+      "utilizaveis": 6
+    },
+    {
+      "endpoint": "google/gemini-3.1-flash-lite",
+      "role": "verificador-factual",
+      "domain": "operacional",
+      "observacoes": 5,
+      "utilizaveis": 5
+    },
+    {
+      "endpoint": "ollama/minimax-m3",
+      "role": "critico-epistemologico",
+      "domain": "operacional",
+      "observacoes": 5,
+      "utilizaveis": 0
+    },
+    {
+      "endpoint": "ollama/gemma4:31b",
+      "role": "verificador-factual",
+      "domain": "operacional",
+      "observacoes": 4,
+      "utilizaveis": 4
+    },
+    {
+      "endpoint": "ollama/nemotron-3-nano:30b",
+      "role": "critico-epistemologico",
+      "domain": "operacional",
+      "observacoes": 4,
+      "utilizaveis": 2
+    },
+    {
+      "endpoint": "groq/llama-3.1-8b-instant",
+      "role": "revisor-estrutural",
+      "domain": "operacional",
+      "observacoes": 3,
+      "utilizaveis": 2
+    },
+    {
+      "endpoint": "groq/llama-3.1-8b-instant",
+      "role": "revisor-estrutural",
+      "domain": "Física",
+      "observacoes": 3,
+      "utilizaveis": 1
+    },
+    {
+      "endpoint": "groq/llama-3.3-70b-versatile",
+      "role": "revisor-estrutural",
+      "domain": "Física",
+      "observacoes": 3,
+      "utilizaveis": 2
+    },
+    {
+      "endpoint": "ollama/gemma4:31b",
+      "role": "critico-epistemologico",
+      "domain": "Cognição",
+      "observacoes": 3,
+      "utilizaveis": 3
+    },
+    {
+      "endpoint": "ollama/minimax-m3",
+      "role": "verificador-factual",
+      "domain": "Cognição",
+      "observacoes": 3,
+      "utilizaveis": 1
+    },
+    {
+      "endpoint": "google/gemini-3.1-flash-lite",
+      "role": "verificador-factual",
+      "domain": "—",
+      "observacoes": 2,
+      "utilizaveis": 2
+    },
+    {
+      "endpoint": "groq/groq/compound-mini",
+      "role": "revisor-estrutural",
+      "domain": "Física",
+      "observacoes": 2,
+      "utilizaveis": 1
+    },
+    {
+      "endpoint": "groq/qwen/qwen3.6-27b",
+      "role": "revisor-estrutural",
+      "domain": "Física",
+      "observacoes": 2,
+      "utilizaveis": 0
+    },
+    {
+      "endpoint": "groq/qwen/qwen3.6-27b",
+      "role": "revisor-estrutural",
+      "domain": "Dados",
+      "observacoes": 2,
+      "utilizaveis": 1
+    },
+    {
+      "endpoint": "groq/qwen/qwen3.6-27b",
+      "role": "revisor-estrutural",
+      "domain": "Cognição",
+      "observacoes": 2,
+      "utilizaveis": 1
+    },
+    {
+      "endpoint": "ollama/gemma4:31b",
+      "role": "revisor-estrutural",
+      "domain": "—",
+      "observacoes": 2,
+      "utilizaveis": 2
+    },
+    {
+      "endpoint": "ollama/gemma4:31b",
+      "role": "critico-epistemologico",
+      "domain": "Dados",
+      "observacoes": 2,
+      "utilizaveis": 2
+    },
+    {
+      "endpoint": "ollama/minimax-m3",
+      "role": "critico-epistemologico",
+      "domain": "—",
+      "observacoes": 2,
+      "utilizaveis": 1
+    },
+    {
+      "endpoint": "ollama/minimax-m3",
+      "role": "verificador-factual",
+      "domain": "Dados",
+      "observacoes": 2,
+      "utilizaveis": 1
+    },
+    {
+      "endpoint": "ollama/nemotron-3-super",
+      "role": "verificador-factual",
+      "domain": "operacional",
+      "observacoes": 2,
+      "utilizaveis": 2
+    },
+    {
+      "endpoint": "ollama/nemotron-3-ultra",
+      "role": "critico-epistemologico",
+      "domain": "operacional",
+      "observacoes": 2,
+      "utilizaveis": 1
+    },
+    {
+      "endpoint": "groq/groq/compound",
+      "role": "revisor-estrutural",
+      "domain": "operacional",
+      "observacoes": 1,
+      "utilizaveis": 0
+    },
+    {
+      "endpoint": "groq/groq/compound",
+      "role": "revisor-estrutural",
+      "domain": "Física",
+      "observacoes": 1,
+      "utilizaveis": 0
+    },
+    {
+      "endpoint": "groq/llama-3.1-8b-instant",
+      "role": "critico-epistemologico",
+      "domain": "Física",
+      "observacoes": 1,
+      "utilizaveis": 0
+    },
+    {
+      "endpoint": "groq/llama-3.3-70b-versatile",
+      "role": "critico-epistemologico",
+      "domain": "—",
+      "observacoes": 1,
+      "utilizaveis": 0
+    },
+    {
+      "endpoint": "groq/llama-3.3-70b-versatile",
+      "role": "critico-epistemologico",
+      "domain": "Cognição",
+      "observacoes": 1,
+      "utilizaveis": 1
+    },
+    {
+      "endpoint": "groq/llama-3.3-70b-versatile",
+      "role": "verificador-factual",
+      "domain": "Física",
+      "observacoes": 1,
+      "utilizaveis": 1
+    },
+    {
+      "endpoint": "groq/llama-3.3-70b-versatile",
+      "role": "revisor-estrutural",
+      "domain": "IA",
+      "observacoes": 1,
+      "utilizaveis": 0
+    },
+    {
+      "endpoint": "groq/openai/gpt-oss-120b",
+      "role": "revisor-estrutural",
+      "domain": "Cognição",
+      "observacoes": 1,
+      "utilizaveis": 0
+    },
+    {
+      "endpoint": "groq/qwen/qwen3.6-27b",
+      "role": "verificador-factual",
+      "domain": "—",
+      "observacoes": 1,
+      "utilizaveis": 0
+    },
+    {
+      "endpoint": "groq/qwen/qwen3.6-27b",
+      "role": "verificador-factual",
+      "domain": "Cognição",
+      "observacoes": 1,
+      "utilizaveis": 0
+    },
+    {
+      "endpoint": "nvidia/z-ai/glm-5.2",
+      "role": "revisor-estrutural",
+      "domain": "—",
+      "observacoes": 1,
+      "utilizaveis": 1
+    },
+    {
+      "endpoint": "nvidia/z-ai/glm-5.2",
+      "role": "revisor-estrutural",
+      "domain": "Cognição",
+      "observacoes": 1,
+      "utilizaveis": 0
+    },
+    {
+      "endpoint": "ollama/gemma4:31b",
+      "role": "critico-epistemologico",
+      "domain": "IA",
+      "observacoes": 1,
+      "utilizaveis": 1
+    },
+    {
+      "endpoint": "ollama/minimax-m3",
+      "role": "verificador-factual",
+      "domain": "IA",
+      "observacoes": 1,
+      "utilizaveis": 1
+    },
+    {
+      "endpoint": "ollama/nemotron-3-nano:30b",
+      "role": "verificador-factual",
+      "domain": "Física",
+      "observacoes": 1,
+      "utilizaveis": 0
+    },
+    {
+      "endpoint": "ollama/nemotron-3-super",
+      "role": "critico-epistemologico",
+      "domain": "Física",
+      "observacoes": 1,
+      "utilizaveis": 1
+    }
+  ],
+  "custo": {
+    "paineis_decididos": 160,
+    "registros_de_chamada": 1531,
+    "tentativas_por_decisao": 9.56875
+  },
+  "pivotalidade": {
+    "redundant": 246,
+    "pivotal": 69
+  },
+  "lacunas": [
+    {
+      "nome": "validation_outcome",
+      "motivo": "nenhum patch passou pelas guardas reais; sem isso não há contra o que calibrar o revisor-estrutural"
+    },
+    {
+      "nome": "promotion_outcome",
+      "motivo": "zero promoções: o desfecho canônico do corpus nunca ocorreu"
+    },
+    {
+      "nome": "tokens por chamada",
+      "motivo": "o ledger de cota grava por endpoint em janela deslizante, sem task_id nem panel_id; correlacionar por horário erra sob concorrência"
+    }
+  ]
+}

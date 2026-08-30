@@ -13,7 +13,12 @@ if [ "${VAULT_SKIP_HOOKS:-0}" = "1" ]; then
     exit 0
 fi
 
-REPO="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
+# O symlink .git/hooks/pre-commit → tools/pre-commit.sh, com `readlink -f`,
+# resolve sempre para o checkout vivo. O Promoter commita numa worktree
+# destacada: os gates têm de auditar essa árvore (o corpus já com o patch),
+# não o knowledge/ ainda não promovido. `show-toplevel` honra GIT_WORK_TREE
+# enquanto ainda está no ambiente; `gate()` abaixo o remove de propósito.
+REPO="$(git rev-parse --show-toplevel)"
 cd "$REPO"
 
 # `env -u PYTHONPATH` existe por causa de um acidente real de 2026-08-16: um

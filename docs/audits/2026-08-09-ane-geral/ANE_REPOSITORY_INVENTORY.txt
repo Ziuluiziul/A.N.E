@@ -1,0 +1,178 @@
+A.N.E. — INVENTÁRIO FORENSE DO REPOSITÓRIO
+Baseline: 2026-08-09T23:37:15-03:00
+HEAD: 61f2da448b234bde0318237965ac954c2c591c17 (main)
+Observação: o diretório desta auditoria é excluído da árvore abaixo porque não existia na abertura.
+
+PAPEL DOS SUBSISTEMAS CONFIRMADOS
+knowledge/                         corpus acadêmico canônico e produto autoral
+backend/src/vault/                 API, corpus, projeção, eventos, autonomia, quórum, promoção e controle
+providers/                         adaptadores, catálogo, inventário e aptidão de quatro provedores
+integrations/google_workspace/     integração opcional com APIs do Google Workspace
+frontend/src/                      Atlas 3D TypeScript/Three.js, contratos, painéis, navegação e controle
+tools/                             entrypoints e scripts curtos usados pelo Makefile
+tests/                             suíte Python
+runtime/                           estado local ignorado: eventos, painéis, modelos, fila e capturas
+docs/                              ADRs, históricos, handoffs, prompts e evidências de auditoria
+
+CONTAGENS POR SUBSISTEMA (arquivos rastreados / linhas rastreadas / arquivos presentes)
+knowledge                              84 /    6691 /   84
+backend/src/vault                      46 /   10459 /   92
+providers                              14 /    2127 /   28
+integrations/google_workspace           2 /     345 /    4
+frontend/src                           55 /   17833 /   55
+tools                                  13 /    1764 /   19
+tests                                  25 /    7751 /   50
+docs                                   69 /   61992 /   75
+runtime                                 0 /       0 /  794
+
+RUNTIME PRESENTE NA ABERTURA (arquivos / bytes)
+runtime/captures              113 /   51138962
+runtime/modelos               376 /    1667901
+runtime/quorum                278 /     532605
+runtime/state                  22 /     486291
+runtime/logs                    3 /     163532
+runtime/events                  2 /     516135
+runtime/proposals               0 /          0
+quorum: 39 painéis, 39 members.json, 39 task.json, 39 events.jsonl, 115 votos, 37 decisões, 9 patches, 0 promoções
+modelos por provedor: google 100, groq 183, nvidia 71, ollama 22
+
+SEPARAÇÃO RASTREADO / NÃO RASTREADO / IGNORADO
+rastreados: 324 arquivos
+não rastreados na abertura: docs/PROMPT-AUDITORIA-MESTRE-ANE-GPT-5.6-SOL-2026-08-09.md
+modificados na abertura: frontend/src/{atlas.ts,composeLayout.ts,main.ts,runtime.ts,runtimeLayer.test.ts,runtimeLayer.ts}
+categorias ignoradas presentes: .venv/, .vscode/, __pycache__/, caches, frontend/node_modules/, frontend/dist/, frontend/public/, runtime/, *.zip
+nenhuma dessas categorias foi encontrada em git ls-files
+
+20 MAIORES ARQUIVOS RASTREADOS (bytes caminho)
+825771 docs/audits/2026-08-05-atlas-geral/screenshots/bc-02-corpus-com-fluxo-vivo.png
+786272 docs/audits/2026-08-05-atlas-geral/screenshots/cc-03-no-focado.png
+770331 docs/audits/2026-08-05-atlas-geral/screenshots/cc-02-dominio-focado.png
+766462 docs/audits/2026-08-05-atlas-geral/screenshots/j-01-moc-focado.png
+740658 docs/audits/2026-08-05-atlas-geral/screenshots/i-01-formas-e-titulos.png
+740625 docs/audits/2026-08-05-atlas-geral/screenshots/i-02-silhueta-e-titulo.png
+706403 docs/audits/2026-08-05-atlas-geral/screenshots/cc-05-volta-ao-global.png
+705683 docs/audits/2026-08-05-atlas-geral/screenshots/bc-01-corpus-volumetrico.png
+700765 docs/audits/2026-08-05-atlas-geral/screenshots/cc-01-global-so-pontes.png
+615895 docs/audits/2026-08-05-atlas-geral/screenshots/audit-04-global-fit.png
+611271 docs/audits/2026-08-05-atlas-geral/screenshots/audit-02-global-nativo.png
+597693 docs/audits/2026-08-05-atlas-geral/screenshots/ac-01-corpus-isolado.png
+466210 docs/audits/2026-08-05-atlas-geral/screenshots/h-02-evento-vivo.png
+466210 docs/audits/2026-08-05-atlas-geral/screenshots/h-01-trilha-viva.png
+466001 docs/audits/2026-08-05-atlas-geral/screenshots/h-04-evento-expandido.png
+465783 docs/audits/2026-08-05-atlas-geral/screenshots/h-03-evento-selecionado.png
+453923 docs/audits/2026-08-05-atlas-geral/screenshots/g-01-nota-completa.png
+422892 docs/audits/2026-08-05-atlas-geral/screenshots/audit-01-global.png
+409443 docs/audits/2026-08-05-atlas-geral/screenshots/cc-04-ponte-selecionada.png
+305718 docs/audits/2026-08-05-atlas-geral/screenshots/d1-01-limpo-global.png
+
+20 MAIORES ARQUIVOS PRESENTES MAS IGNORADOS (bytes caminho)
+36900704 .venv/lib/python3.13/site-packages/08ae81f72d5a2b5fa9e0__mypyc.cpython-313-x86_64-linux-gnu.so
+27835968 .venv/bin/ruff
+24101026 frontend/node_modules/.pnpm/@typescript+typescript-linux-x64@7.0.2/node_modules/@typescript/typescript-linux-x64/lib/tsc
+19279544 frontend/node_modules/.pnpm/@rolldown+binding-linux-x64-gnu@1.2.1/node_modules/@rolldown/binding-linux-x64-gnu/rolldown-binding.linux-x64-gnu.node
+15743800 .venv/lib/python3.13/site-packages/uvloop/loop.cpython-313-x86_64-linux-gnu.so
+13847936 .venv/lib/python3.13/site-packages/cryptography/hazmat/bindings/_rust.abi3.so
+10515553 frontend/node_modules/.pnpm/@rolldown+binding-wasm32-wasi@1.2.1/node_modules/@rolldown/binding-wasm32-wasi/rolldown-binding.wasm32-wasi.wasm
+10032264 frontend/node_modules/.pnpm/lightningcss-linux-x64-gnu@1.33.0/node_modules/lightningcss-linux-x64-gnu/lightningcss.linux-x64-gnu.node
+9144216 frontend/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript/lib/typescript.js
+6371518 frontend/node_modules/.pnpm/@napi-rs+wasm-runtime@1.2.0_@emnapi+core@2.0.0-alpha.3_@emnapi+runtime@2.0.0-alpha.3/node_modules/@napi-rs/wasm-runtime/dist/fs.js
+6239091 frontend/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript/lib/_tsc.js
+5809256 .venv/lib/python3.13/site-packages/googleapiclient/discovery_cache/documents/compute.alpha.json
+5345280 .mypy_cache/3.13/cache.12.db
+5301684 .venv/lib/python3.13/site-packages/googleapiclient/discovery_cache/documents/compute.beta.json
+4913255 .venv/lib/python3.13/site-packages/googleapiclient/discovery_cache/documents/compute.v1.json
+4750616 .venv/lib/python3.13/site-packages/pydantic_core/_pydantic_core.cpython-313-x86_64-linux-gnu.so
+3936256 .mypy_cache/3.13/cache.11.db
+3776512 .mypy_cache/3.13/cache.9.db
+3522178 .venv/lib/python3.13/site-packages/googleapiclient/discovery_cache/documents/aiplatform.v1beta1.json
+3260416 .mypy_cache/3.13/cache.2.db
+
+ÁRVORE DE DIRETÓRIOS ATÉ PROFUNDIDADE 3
+./
+./.vscode/
+./backend/
+./backend/src/
+./backend/src/vault/
+./docs/
+./docs/audits/
+./docs/audits/2026-08-05-atlas-geral/
+./frontend/
+./frontend/dist/
+./frontend/dist/assets/
+./frontend/public/
+./frontend/src/
+./frontend/src/types/
+./integrations/
+./integrations/google_workspace/
+./knowledge/
+./knowledge/Ciências da Vida/
+./knowledge/Cognição/
+./knowledge/Computação/
+./knowledge/Dados/
+./knowledge/Estatística/
+./knowledge/Física/
+./knowledge/IA/
+./knowledge/Matemática/
+./knowledge/Metodologia/
+./knowledge/Pontes/
+./knowledge/Segurança/
+./providers/
+./providers/google/
+./providers/groq/
+./providers/nvidia/
+./providers/ollama/
+./runtime/
+./runtime/captures/
+./runtime/events/
+./runtime/logs/
+./runtime/modelos/
+./runtime/modelos/google/
+./runtime/modelos/groq/
+./runtime/modelos/nvidia/
+./runtime/modelos/ollama/
+./runtime/proposals/
+./runtime/quorum/
+./runtime/quorum/0b13e3a58322/
+./runtime/quorum/13979e3ba887/
+./runtime/quorum/13b721d19999/
+./runtime/quorum/15b0dfb87750/
+./runtime/quorum/1958de5277a5/
+./runtime/quorum/1991ca0caf68/
+./runtime/quorum/1faf27deb64d/
+./runtime/quorum/2b2c3a188dfd/
+./runtime/quorum/2dd077bade4a/
+./runtime/quorum/3071b9fd6216/
+./runtime/quorum/3a81f93d6af7/
+./runtime/quorum/52b43fd27d7f/
+./runtime/quorum/58bd706a5a79/
+./runtime/quorum/5d30bdb16094/
+./runtime/quorum/5e0c15308275/
+./runtime/quorum/60ec72f6d724/
+./runtime/quorum/63ef290b6f3d/
+./runtime/quorum/6432bf25c998/
+./runtime/quorum/6602ce05016e/
+./runtime/quorum/6ab295bdfc3a/
+./runtime/quorum/7aa8c6195046/
+./runtime/quorum/7abce89a33da/
+./runtime/quorum/7f64303ab5c7/
+./runtime/quorum/90dc425242ac/
+./runtime/quorum/9680a022c82e/
+./runtime/quorum/9999849aff4b/
+./runtime/quorum/9d7646d3c005/
+./runtime/quorum/ac8b791edc81/
+./runtime/quorum/b3853632a564/
+./runtime/quorum/b4f14982a71b/
+./runtime/quorum/b9425c021560/
+./runtime/quorum/bd8c7ee51ffb/
+./runtime/quorum/c3ace8dbfb20/
+./runtime/quorum/c823434a24aa/
+./runtime/quorum/ca03a8f20343/
+./runtime/quorum/ca4751145a13/
+./runtime/quorum/e49f6a5d2728/
+./runtime/quorum/e626137bd0cb/
+./runtime/quorum/f15f4231fc95/
+./runtime/state/
+./runtime/state/autonomy/
+./runtime/state/layout/
+./tests/
+./tools/

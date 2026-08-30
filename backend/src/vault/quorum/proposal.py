@@ -2,8 +2,12 @@
 
 O quórum genérico continua aceitando proposta textual. Quando a tarefa declara uma
 base Git em ``corpus_patch_base_commit``, porém, a resposta deixa de ser prosa: ela
-precisa ser exatamente um ``CorpusPatch`` do schema fechado que o Promoter consome.
-Não há reparo heurístico nessa fronteira; envelope malformado encerra a execução.
+precisa ser um ``CorpusPatch`` do schema fechado que o Promoter consome.
+
+Há extração do único objeto válido — prosa à volta, fence, vírgula pendente — e o
+orquestrador pode retentar o envelope uma vez. Não se inventa chave, conteúdo nem
+fechamento: JSON truncado continua erro; dois objetos válidos continuam ambíguos;
+campo extra continua recusado.
 """
 
 from __future__ import annotations
@@ -15,7 +19,12 @@ from typing import TYPE_CHECKING
 import orjson
 from pydantic import ValidationError
 
-from vault.quorum.parser import json_candidates, strip_reasoning
+from vault.quorum.parser import (
+    _balanced_end,
+    json_candidates,
+    repair_trailing_commas,
+    strip_reasoning,
+)
 
 if TYPE_CHECKING:
     from vault.promotion.patch import CorpusPatch
@@ -172,26 +181,73 @@ def _load_json_object(candidate: str) -> object:
         return orjson.loads(_escape_raw_controls_in_strings(candidate))
 
 
-def _patch_within_reasoning(text: str) -> CorpusPatch | None:
-    """O patch fechado dentro do próprio bloco de raciocínio, se houver exatamente um.
-
-    Mesmo defeito que atingiu o voto, do lado do proponente: um modelo ajustado para
-    raciocinar fecha o JSON dentro do ``<think>`` e a resposta sanitizada fica vazia.
-    A proposta existia e era válida — descartá-la custa a tarefa inteira.
-
-    Só se olha aqui quando nada sobreviveu fora do raciocínio, e só se aceita quando
-    há um único candidato válido: rascunho não se sobrepõe a conclusão declarada, e
-    dois patches na mesma resposta não deixam o orquestrador escolher qual vale.
-    """
+def _try_load_patch(candidate: str) -> CorpusPatch | None:
+    """Decodifica um candidato; a única reparação é vírgula pendente."""
     from vault.promotion.patch import CorpusPatch
 
-    encontrados: list[CorpusPatch] = []
-    for candidate in json_candidates(text):
+    blobs = [candidate]
+    repaired = repair_trailing_commas(candidate)
+    if repaired != candidate:
+        blobs.append(repaired)
+    for blob in blobs:
         try:
-            encontrados.append(CorpusPatch.model_validate(orjson.loads(candidate)))
+            return CorpusPatch.model_validate(_load_json_object(blob))
         except (orjson.JSONDecodeError, ValidationError, TypeError):
             continue
-    return encontrados[0] if len(encontrados) == 1 else None
+    return None
+
+
+def _extract_valid_patches(text: str) -> list[CorpusPatch]:
+    """Todo CorpusPatch válido delimitado no texto, na ordem em que aparece."""
+    encontrados: list[CorpusPatch] = []
+    for candidate in json_candidates(text):
+        patch = _try_load_patch(candidate)
+        if patch is not None:
+            encontrados.append(patch)
+    return encontrados
+
+
+def _truncated_object(text: str) -> bool:
+    """Há `{` sem objeto fechado. Não se completa o JSON daqui."""
+    start = text.find("{")
+    if start == -1:
+        return False
+    return _balanced_end(text, start) is None
+
+
+def envelope_needs_repair(error: BaseException) -> bool:
+    """Só envelope incompleto: truncado ou JSON cortado. Ambiguidade e id não."""
+    if not isinstance(error, ProposalEnvelopeError):
+        return False
+    texto = str(error).casefold()
+    if "ambíguo" in texto or "diverge" in texto:
+        return False
+    return "truncad" in texto or "unexpected end" in texto
+
+
+def envelope_repair_prompt(
+    *,
+    error: str,
+    failed_response: str,
+    proposal_id: str,
+    base_commit: str,
+    original_request: str,
+    original_prompt: str | None = None,
+) -> str:
+    """Mesmo contrato do proponente, mais a ordem de emitir só o JSON fechado."""
+    base = original_prompt or corpus_patch_prompt(
+        original_request,
+        proposal_id=proposal_id,
+        base_commit=base_commit,
+    )
+    return (
+        f"{base}\n\n"
+        "A resposta anterior não era um CorpusPatch fechado "
+        "(truncado ou prosa à volta). Emita SOMENTE o objeto JSON "
+        "completo, sem Markdown, ata ou comentário.\n"
+        f"Erro de envelope: {error}\n"
+        f"Resposta a reparar:\n{failed_response}"
+    )
 
 
 def parse_corpus_patch(
@@ -200,24 +256,51 @@ def parse_corpus_patch(
     expected_proposal_id: str,
     expected_base_commit: str,
 ) -> ParsedCorpusPatch:
-    """Valida sem adivinhar e devolve o objeto canônico que será votado."""
+    """Valida sem adivinhar e devolve o objeto canônico que será votado.
+
+    O caminho estrito continua o preferido. Se ele falhar, extrai-se o único
+    CorpusPatch delimitado no texto sanitizado. Zero candidatos mantém o erro de
+    envelope; dois ou mais são ambíguos. Truncamento não se fecha localmente.
+    """
     from vault.promotion.patch import CorpusPatch
 
     sanitized = strip_reasoning(text)
-    candidate = _strict_json_document(sanitized.final_response)
+    patch: CorpusPatch | None = None
+    strict_error: Exception | None = None
     try:
+        candidate = _strict_json_document(sanitized.final_response)
         patch = CorpusPatch.model_validate(_load_json_object(candidate))
-    except (orjson.JSONDecodeError, ValidationError, TypeError) as error:
-        recuperado = (
-            _patch_within_reasoning(text)
-            if sanitized.reasoning_block_removed and not sanitized.final_response.strip()
-            else None
-        )
-        if recuperado is None:
+    except (
+        orjson.JSONDecodeError,
+        ValidationError,
+        TypeError,
+        ProposalEnvelopeError,
+    ) as error:
+        strict_error = error
+        encontrados = _extract_valid_patches(sanitized.final_response)
+        if len(encontrados) == 1:
+            patch = encontrados[0]
+        elif len(encontrados) > 1:
             raise ProposalEnvelopeError(
-                f"resposta do proponente não obedece ao CorpusPatch: {error}"
+                f"{len(encontrados)} objetos válidos na mesma resposta: patch ambíguo"
             ) from error
-        patch = recuperado
+        elif sanitized.reasoning_block_removed and not sanitized.final_response.strip():
+            recuperados = _extract_valid_patches(text)
+            if len(recuperados) > 1:
+                raise ProposalEnvelopeError(
+                    f"{len(recuperados)} objetos válidos na mesma resposta: patch ambíguo"
+                ) from error
+            if len(recuperados) == 1:
+                patch = recuperados[0]
+
+    if patch is None:
+        fonte = sanitized.final_response or text
+        truncado = _truncated_object(fonte)
+        detalhe = strict_error if strict_error is not None else "nenhum objeto válido"
+        prefixo = "resposta do proponente truncada" if truncado else "resposta do proponente"
+        raise ProposalEnvelopeError(
+            f"{prefixo} não obedece ao CorpusPatch: {detalhe}"
+        ) from strict_error
 
     if patch.proposal_id != expected_proposal_id:
         raise ProposalEnvelopeError(

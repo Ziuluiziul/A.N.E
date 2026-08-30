@@ -1,0 +1,15 @@
+MANIFESTO — auditoria completa do A.N.E.
+gerado em: 2026-08-15T02:47:12Z
+HEAD auditado: 30dd91b
+serviços no ar durante a medição: backend :8000 · Atlas :5173 · worker --interval 2
+conteúdo verificado: nenhuma credencial, dica de chave ou identificador de conta
+
+ARQUIVO                                             BYTES  SHA-256
+ACHADOS.md                                           8351  ed713f2cbc4b18f050b2ff5ab08a32c1bc6c2c41a6a39bb1fccd5329b65cc38d
+AUDITORIA.md                                        11147  90083de95ae5cdcba3041aab190001a9be4406715ed3e963f7b5a9a6091a3762
+capturas/atlas-1440x1000.png                       479544  a939966b15e54f0b6a01e30f9ffac0dded910005afdc74aadad012e693d9579c
+capturas/regua-de-ancoras.png                      324519  835a019579cbc74eb5dbc7a3c9b0311f86be6e7531d816f6ff5ce97b5a82541e
+evidencia/commits-do-ciclo.txt                       1229  36a32f25386c82cbd1f189abe6c359eae082642d4d916f769ccba8811cb9b2c1
+evidencia/estado-completo.json                       2532  6c64d1fe94ef5b2b221f868e7ec51213700b9bcedf20a8e87a5ca76cfc11f562
+evidencia/patches-e-janela.json                      5390  34663b678d77f0d6595d900ae3d560ec68b49d648270cdf4bb847bf735f7d777
+evidencia/superficies-do-ledger.json                22935  9946efe40f05867768731e093580afcd2f29dc7c0a8cbb2ccea421947af209b0

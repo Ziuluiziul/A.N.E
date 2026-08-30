@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import multiprocessing
+import os
 import stat
 from collections.abc import AsyncGenerator
 from pathlib import Path
@@ -204,6 +205,69 @@ def test_cauda_adulterada_nao_reinicia_a_revisao(tmp_path: Path) -> None:
 
     assert third.revision == 3
     assert [event.revision for event in store.load()] == [1, 2, 3]
+
+
+def test_load_limit_na_revisao_zero_le_da_cauda_sem_varrer(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store = OperationalEventStore(tmp_path / "events")
+    written = [store.append(draft()) for _ in range(12)]
+    prefix = b"{" + (b"x" * (1024 * 1024)) + b"\n"
+    store.log_path.write_bytes(prefix + store.log_path.read_bytes())
+
+    real_read = os.read
+    total = {"n": 0}
+
+    def counting_read(fd: int, n: int) -> bytes:
+        data = real_read(fd, n)
+        total["n"] += len(data)
+        return data
+
+    monkeypatch.setattr(os, "read", counting_read)
+    events = store.load(limit=4)
+
+    assert [event.revision for event in events] == [9, 10, 11, 12]
+    assert events == written[-4:]
+    assert total["n"] < 256 * 1024
+
+
+def test_load_limit_na_revisao_zero_pula_linha_corrupta(tmp_path: Path) -> None:
+    store = OperationalEventStore(tmp_path / "events")
+    store.append(draft())
+    second = store.append(draft("task_assigned"))
+    with store.log_path.open("ab") as stream:
+        stream.write(b"{nao-e-json\n")
+    third = store.append(draft("call_started"))
+
+    events = store.load(limit=2)
+
+    assert [event.revision for event in events] == [2, 3]
+    assert events == [second, third]
+
+
+def test_load_limit_na_revisao_zero_descarta_revisao_nao_crescente(tmp_path: Path) -> None:
+    store = OperationalEventStore(tmp_path / "events")
+    first = store.append(draft())
+    second = store.append(draft("task_assigned"))
+    third = store.append(draft("call_started"))
+    with store.log_path.open("ab") as stream:
+        stream.write((json.dumps(first.to_dict()) + "\n").encode("utf-8"))
+
+    events = store.load(limit=10)
+
+    assert [event.revision for event in events] == [1, 2, 3]
+    assert events == [first, second, third]
+
+
+def test_load_apos_revisao_ainda_para_no_limite(tmp_path: Path) -> None:
+    store = OperationalEventStore(tmp_path / "events")
+    written = [store.append(draft()) for _ in range(10)]
+
+    events = store.load(after_revision=4, limit=3)
+
+    assert [event.revision for event in events] == [5, 6, 7]
+    assert events == written[4:7]
 
 
 async def test_bus_nao_cria_placeholder_e_enxerga_produtor_externo(tmp_path: Path) -> None:

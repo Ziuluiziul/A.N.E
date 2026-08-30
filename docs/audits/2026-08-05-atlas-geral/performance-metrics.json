@@ -1,0 +1,25 @@
+{
+  "descricao": "Invariantes de desempenho e do pool de texto, medidos na cena viva a 1600x900.",
+  "pool_de_texto": {
+    "capacity": 64,
+    "createdObjects": 64,
+    "allocatedSlots": 64,
+    "visibleObjects": 64,
+    "invariante_visibleObjects_menorigual_allocatedSlots_menorigual_64": true,
+    "corpusAllocated": 56,
+    "runtimeAllocated": 8
+  },
+  "quadro_parado": {
+    "syncCalls_antes": 556,
+    "syncCalls_depois": 556,
+    "sincronizacao_espuria": false
+  },
+  "desenho": {
+    "drawCalls_global": 117,
+    "triangulos_global": 37840,
+    "objetos_na_cena": 14,
+    "drawCalls_em_foco": 38,
+    "triangulos_em_foco": 25462
+  },
+  "ressalva": "FPS e frame time p50/p95/p99 não foram medidos: o Browser pane não compõe quadros, e renderOnce() mede uma passada sob demanda, não o laço de animação."
+}

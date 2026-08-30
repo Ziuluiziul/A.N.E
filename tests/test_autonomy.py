@@ -877,6 +877,35 @@ def test_capacidade_ociosa_identidade_e_o_claim_nao_o_lote(tmp_path: Path) -> No
     assert idle_a[0].corpus_entity == "Dados/Nota aberta.md"
 
 
+def test_capacidade_ociosa_onda_diaria_nasce_identidade_nova(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Claim ainda aberto ganha onda nova; lote de endpoints continua irrelevante."""
+    from vault.autonomy import generator as gen
+
+    reader = _write_corpus(tmp_path / "knowledge")
+    endpoints = [f"nvidia/e{i:02d}" for i in range(1, 9)]
+    monkeypatch.setattr(gen, "_idle_wave", lambda: "2026-08-30")
+    primeira = TaskGenerator(
+        reader,
+        quorum_root=tmp_path / "runtime" / "quorum",
+        models_root=tmp_path / "runtime" / "modelos",
+        idle_endpoints=endpoints,
+    ).generate()
+    monkeypatch.setattr(gen, "_idle_wave", lambda: "2026-08-31")
+    segunda = TaskGenerator(
+        reader,
+        quorum_root=tmp_path / "runtime" / "quorum",
+        models_root=tmp_path / "runtime" / "modelos",
+        idle_endpoints=endpoints,
+    ).generate()
+    idle_a = [c for c in primeira if c.origin is TaskOrigin.IDLE_CAPACITY]
+    idle_b = [c for c in segunda if c.origin is TaskOrigin.IDLE_CAPACITY]
+    assert len(idle_a) == 1 and len(idle_b) == 1
+    assert idle_a[0].id != idle_b[0].id
+    assert idle_a[0].corpus_entity == idle_b[0].corpus_entity == "Dados/Nota aberta.md"
+
+
 def test_generator_deriva_defeito_de_conteudo(tmp_path: Path) -> None:
     reader = _write_corpus(tmp_path / "knowledge")
     (tmp_path / "knowledge" / "Dados" / "Nota quebrada.md").write_text(

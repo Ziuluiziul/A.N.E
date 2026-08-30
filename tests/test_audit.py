@@ -78,7 +78,7 @@ def test_corpus_canonico_preserva_contagens_e_aprova_estrutura(
 
     assert completed.returncode == 0, completed.stdout + completed.stderr
     assert "notas markdown ................. 84" in completed.stdout
-    assert "wikilinks ...................... 672" in completed.stdout
+    assert "wikilinks ...................... 670" in completed.stdout
     assert "linhas definidoras de claims ... 267" in completed.stdout
     assert "claims inválidos ............... 0" in completed.stdout
     assert "ESTRUTURA APROVADA" in completed.stdout

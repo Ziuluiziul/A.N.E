@@ -19,13 +19,13 @@ Base mínima para entropia, ensembles, irreversibilidade, não equilíbrio e ter
 Para um sistema simples,
 
 $$
- dU=\delta Q-\delta W,
+dU=\delta Q-\delta W,
 $$
 
 com convenção de trabalho realizado pelo sistema. Em equilíbrio reversível,
 
 $$
- dU=T\,dS-p\,dV+\mu\,dN+\cdots.
+dU=T\,dS-p\,dV+\mu\,dN+\cdots.
 $$
 
 `U`, `S`, `V` e `N` são funções de estado; calor e trabalho dependem do caminho.
@@ -35,19 +35,19 @@ $$
 No ensemble microcanônico,
 
 $$
- S_B=k_B\ln\Omega.
+S_B=k_B\ln\Omega.
 $$
 
 Para distribuição `{p_i}`,
 
 $$
- S_G=-k_B\sum_i p_i\ln p_i.
+S_G=-k_B\sum_i p_i\ln p_i.
 $$
 
 No ensemble canônico,
 
 $$
- Z(\beta)=\sum_i e^{-\beta E_i},\qquad
+Z(\beta)=\sum_i e^{-\beta E_i},\qquad
 F=-k_BT\ln Z,
 $$
 
@@ -58,7 +58,7 @@ com médias e flutuações obtidas por derivadas de `ln Z`. Equivalência de ens
 Para sistema isolado macroscópico,
 
 $$
- \Delta S\ge0.
+\Delta S\ge0.
 $$
 
 Na mecânica estatística, isso é comportamento típico sob coarse graining e condições iniciais de baixa entropia, não violação da reversibilidade microscópica. Flutuações negativas locais são possíveis em pequenas escalas e tempos finitos; teoremas de flutuação quantificam sua razão de probabilidade.
@@ -68,7 +68,7 @@ Na mecânica estatística, isso é comportamento típico sob coarse graining e c
 Fluxos `J_i` respondem a forças termodinâmicas `X_j`:
 
 $$
- J_i=\sum_jL_{ij}X_j.
+J_i=\sum_jL_{ij}X_j.
 $$
 
 Sob reversibilidade microscópica apropriada, valem relações de reciprocidade de Onsager. O regime é linear e próximo do equilíbrio; extrapolação irrestrita para sistemas fortemente dirigidos é inválida.
@@ -78,8 +78,8 @@ Sob reversibilidade microscópica apropriada, valem relações de reciprocidade 
 A decomposição local
 
 $$
- \frac{dS}{dt}=\Phi+\Pi,
- \qquad \Pi\ge0,
+\frac{dS}{dt}=\Phi+\Pi,
+\qquad \Pi\ge0,
 $$
 
 distingue fluxo de entropia e produção interna. Longe do equilíbrio, não há princípio variacional universal estabelecido equivalente à minimização de energia livre. Estabilidade, bifurcações e relações constitutivas precisam ser analisadas para cada sistema.

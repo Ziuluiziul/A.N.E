@@ -171,7 +171,7 @@ def _decode(candidate: str) -> Vote:
     return Vote.model_validate(raw)
 
 
-def _repair(candidate: str) -> str:
+def repair_trailing_commas(candidate: str) -> str:
     """A única reparação permitida: retirar vírgula antes de ``}`` ou ``]``."""
     repaired: list[str] = []
     quoted = False
@@ -217,7 +217,7 @@ def _extract(text: str) -> _Extraction:
         except (orjson.JSONDecodeError, ValidationError, TypeError):
             pass
         try:
-            votes.append(_decode(_repair(candidate)))
+            votes.append(_decode(repair_trailing_commas(candidate)))
         except (orjson.JSONDecodeError, ValidationError, TypeError):
             continue
         repaired = True

@@ -1,0 +1,96 @@
+{
+  "descricao": "Ontologia operacional: o que existe em dado persistido, por nível.",
+  "niveis": {
+    "provedor": {
+      "existe": true,
+      "instancias": [
+        "google",
+        "groq",
+        "nvidia",
+        "ollama"
+      ]
+    },
+    "endpoint": {
+      "existe": true,
+      "catalogados": {
+        "google": 58,
+        "groq": 15,
+        "nvidia": 102,
+        "ollama": 18
+      }
+    },
+    "modelo_servido": {
+      "existe": true,
+      "fonte": "runtime/state/endpoints.json"
+    },
+    "familia_de_modelo": {
+      "existe": true,
+      "exemplos": [
+        "gemini",
+        "qwen3",
+        "llama",
+        "glm"
+      ]
+    },
+    "classe_de_worker": {
+      "existe": true,
+      "instancias": [
+        "avaliador",
+        "produtor"
+      ]
+    },
+    "worker_logico": {
+      "existe": true,
+      "instancias": [
+        "proponente",
+        "verificador-factual",
+        "critico-epistemologico",
+        "revisor-estrutural",
+        "revisor-interdisciplinar",
+        "sintetizador",
+        "arbitro"
+      ]
+    },
+    "worker_em_execucao": {
+      "existe": true,
+      "evidencia": "runtime/quorum/<painel>/members.json",
+      "rodando_agora": 0
+    },
+    "execucao": {
+      "existe": true,
+      "paineis_persistidos": 35
+    },
+    "candidato": {
+      "existe": true,
+      "evidencia": "proposal.final_response por painel"
+    },
+    "avaliacao": {
+      "existe": true,
+      "evidencia": "votes/*.json com decision, confidence, evidence[], blocking_issues[]"
+    },
+    "quorum": {
+      "existe": true,
+      "evidencia": "decision.json com tally, provider_count, family_count"
+    },
+    "decisao_final": {
+      "existe": true,
+      "instancias_persistidas": 34
+    }
+  },
+  "representacao_3d": {
+    "kinds_no_contrato": [
+      "quorum-panel",
+      "quorum-member",
+      "quorum-vote",
+      "quorum-decision"
+    ],
+    "nos_na_cena": {
+      "quorum-panel": 35,
+      "quorum-member": 105,
+      "quorum-vote": 104,
+      "quorum-decision": 34
+    },
+    "diferenciacao_espacial": false,
+    "observacao": "os quatro kinds existem no dado e no contrato, mas caem num único agrupamento sem âncora e sem subdivisão, o que os torna indistinguíveis na cena"
+  }
+}

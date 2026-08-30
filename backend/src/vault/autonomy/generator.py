@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import statistics
 from collections import Counter
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -37,6 +38,16 @@ _IDLE_FAN_OUT = 8
 _IDLE_ENDPOINTS_POR_TAREFA = 4
 # Muda o fingerprint: tarefas antigas (sem criar nota) não bloqueiam as novas.
 _REGIME = "liberdade-com-rigor-20260817"
+
+
+def _idle_wave() -> str:
+    """Onda UTC da capacidade ociosa: mesmo claim, outro dia → identidade nova.
+
+    Tarefas antigas (sem `wave`, ou onda anterior) continuam terminais; `add_new`
+    só aceita identidade inédita. Não inclui o lote de endpoints — isso inundou
+    a fila com 2083 `idle_capacity`. Teto: `_IDLE_FAN_OUT` painéis por dia UTC.
+    """
+    return datetime.now(UTC).strftime("%Y-%m-%d")
 
 
 class TaskGenerator:
@@ -87,7 +98,7 @@ class TaskGenerator:
         corpus_entity: str | None = None,
         metadata: dict[str, Any] | None = None,
         max_calls: int = 5,
-        max_output_tokens: int = 8192,
+        max_output_tokens: int = 4096,
     ) -> AutonomousTask:
         identifier, fingerprint = stable_task_id(origin, source)
         return AutonomousTask(
@@ -350,6 +361,7 @@ class TaskGenerator:
                 "note": note.id,
                 "kind": "idle",
                 "regime": _REGIME,
+                "wave": _idle_wave(),
             }
             tarefas.append(
                 self._task(

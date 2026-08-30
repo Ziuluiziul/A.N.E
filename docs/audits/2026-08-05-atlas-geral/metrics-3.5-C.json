@@ -1,0 +1,141 @@
+{
+  "descricao": "Métricas de relação de 3.5-C, medidas na pose fixa (POSE_FIXA) e viewport 1600x900.",
+  "integridade": {
+    "relacoesSemanticasPreservadas": 555,
+    "relacoesPerdidas": 0,
+    "proveniencia": "de toda primitiva se recuperam as relações dirigidas que ela representa; verificado no teste 14",
+    "segmentosCoincidentes": {
+      "antes": 136,
+      "depois": 0
+    },
+    "agregadasInterMOC": {
+      "antes": 75,
+      "depois": 52,
+      "paresDistintos": 52,
+      "duplicadasPorInversaoDoPar": 0
+    }
+  },
+  "desenho_todasAsRelacoes": {
+    "descricao": "com todas as relações do corpus desenhadas — o estado que o filtro F liga",
+    "antes": {
+      "relacoesSemanticas": 555,
+      "paresCanonicos": 555,
+      "segmentos": 7447,
+      "cruzamentosProjetados": 36983,
+      "ocupacaoPorLinhas": 0.1731,
+      "ocupacaoComSobreposicao": 0.1533,
+      "densidadeMaximaPorCelula": 98,
+      "segmentosCoincidentes": 136
+    },
+    "depois": {
+      "relacoesSemanticas": 555,
+      "paresCanonicos": 426,
+      "segmentos": 5898,
+      "cruzamentosProjetados": 14214,
+      "ocupacaoPorLinhas": 0.1738,
+      "ocupacaoComSobreposicao": 0.1417,
+      "densidadeMaximaPorCelula": 58,
+      "segmentosCoincidentes": 0
+    },
+    "reducoes": {
+      "primitivas_pct": 23.2,
+      "segmentos_pct": 20.8,
+      "cruzamentos_pct": 61.6,
+      "densidadeMaxima_pct": 40.8
+    }
+  },
+  "primitivasVisiveisPorEstado": {
+    "descricao": "primitiva = uma linha ou tubo que a cena emite, independente de quantas relações ela representa",
+    "global": {
+      "antes": 298,
+      "depois": 52,
+      "composicao_antes": "75 tubos agregados + espinha de 223 relações nota→nota",
+      "composicao_depois": "52 tubos agregados; nenhuma relação nota→nota bruta",
+      "reducao_pct": 82.6
+    },
+    "dominioFocado": {
+      "antes": 298,
+      "depois": 100,
+      "composicao_depois": "52 tubos + até 48 pares do território, por orçamento",
+      "reducao_pct": 66.4
+    },
+    "noFocado": {
+      "antes": "298 + vizinhança",
+      "depois": "52 tubos + ego de grau 1 e 2",
+      "observacao": "o ego já existia; o que mudou é o fundo, que deixou de ser o corpus inteiro"
+    },
+    "corpusMaisSSE": {
+      "observacao": "as relações SSE têm registro e orçamento próprios e nunca entram no do corpus; verificado no teste 13"
+    },
+    "todasAsCamadas": {
+      "observacao": "soma dos orçamentos independentes, sem interação entre eles"
+    }
+  },
+  "estadoVivo": {
+    "descricao": "medido no navegador, porque exige WebGL",
+    "global": {
+      "objetosDeAresta": 1,
+      "arestasVisiveis": [
+        "edges:aggregated"
+      ],
+      "drawCalls": 116
+    },
+    "dominioFocado": {
+      "arestasVisiveis": [
+        "edges:aggregated",
+        "edges:spine",
+        "edges:focus",
+        "edges:second-degree"
+      ],
+      "drawCalls": 54
+    },
+    "noFocado": {
+      "arestasVisiveis": [
+        "edges:aggregated",
+        "edges:focus",
+        "edges:second-degree"
+      ],
+      "drawCalls": 54
+    },
+    "voltaAoGlobal": {
+      "objetosDeAresta": 1,
+      "residuo": 0
+    }
+  },
+  "estabilidade": {
+    "objetosNaCena": {
+      "inicio": 123,
+      "apos40SelecoesEDesselecoes": 123,
+      "apos100Alternancias": 123,
+      "crescimento": 0
+    },
+    "quadroParado": {
+      "sincronizacoes": "6522 → 6522",
+      "objetosCriados": 0
+    },
+    "poolDeTexto": {
+      "criados": 64,
+      "capacidade": 64
+    }
+  },
+  "criteriosDeAceite": {
+    "555_relacoes_preservadas": true,
+    "zero_perda_de_proveniencia": true,
+    "zero_duplicata_byte_a_byte": true,
+    "zero_linha_coincidente_familias_diferentes": true,
+    "zero_agregacao_duplicada_por_inversao": true,
+    "uma_primitiva_por_par_de_MOCs": true,
+    "nenhuma_relacao_nota_a_nota_fora_de_selecao": true,
+    "reducao_primitivas_global_min_60pct": {
+      "exigido": 60,
+      "obtido": 82.6
+    },
+    "reducao_cruzamentos_min_50pct": {
+      "exigido": 50,
+      "obtido": 61.6
+    },
+    "troca_de_foco_sem_linhas_residuais": true,
+    "quadro_parado_estavel": true,
+    "sem_crescimento_em_100_alternancias": true
+  }
+}

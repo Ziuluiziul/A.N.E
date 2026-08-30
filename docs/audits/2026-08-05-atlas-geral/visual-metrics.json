@@ -1,0 +1,88 @@
+{
+  "descricao": "Medições do layout, computadas por layoutAtlas() sobre a projeção viva.",
+  "cena_viva": {
+    "nos": 362,
+    "arestas": 941,
+    "drawCalls": 117,
+    "triangulos": 37840
+  },
+  "extensao": {
+    "X": 311.12,
+    "Y": 381.15,
+    "Z": 64.09,
+    "razao_Z_sobre_maxXY": 0.1681,
+    "razao_variancia_Z": 0.0228
+  },
+  "pca": {
+    "lambda1": 7580.23,
+    "lambda2": 3140.42,
+    "lambda3": 169.22,
+    "razao_lambda3_lambda1": 0.02232,
+    "sigma1": 87.06,
+    "sigma2": 56.04,
+    "sigma3": 13.01,
+    "razao_sigma3_sigma1": 0.1494
+  },
+  "camera_extentOf": {
+    "radius": 246.82,
+    "depth": 32.54,
+    "razao": 0.1318
+  },
+  "nuvens": {
+    "total": 17,
+    "pares_com_bounding_sphere_sobreposta": 0,
+    "pares_avaliados": 136,
+    "centroides_extensao_Z": 60.75,
+    "centroides_sd_Z": 18.84,
+    "razao_extensaoZ_sobre_extensaoX_dos_centroides": 0.2063
+  },
+  "nuvem_operacional": {
+    "membros": 278,
+    "chave_de_agrupamento": "domínio:operacional/quorum",
+    "ancora": null,
+    "centro": [
+      -54.7,
+      192.8,
+      0.2
+    ],
+    "raio": 46.8,
+    "subdivisao_por_kind": false
+  },
+  "distancias": {
+    "minima": 1.99,
+    "par_minimo": "dois nós quorum-decision",
+    "p1": 8.46,
+    "p50": 67.61,
+    "p99": 348.09
+  },
+  "anel_de_ancoras": {
+    "sem_camada_operacional": 87.0,
+    "com_camada_operacional": 148.5,
+    "consequencia": "todo MOC se desloca quando painéis de quórum cruzam um balde de 32"
+  },
+  "sem_camada_operacional": {
+    "extensao_X": 174.21,
+    "extensao_Z": 41.71,
+    "razao_variancia_Z": 0.044,
+    "razao_lambda3_lambda1": 0.04172,
+    "camera_radius": 92.31
+  },
+  "painel_expandido_vs_zoom": {
+    "EXPANSAO": 2.2,
+    "moc_mundo": [
+      12.8,
+      7.2
+    ],
+    "moc_expandido_mundo": [
+      28.16,
+      15.84
+    ],
+    "orbit_minDistance": 12,
+    "fov_graus": 38,
+    "janela_visivel_a_12_unidades": [
+      14.7,
+      8.26
+    ],
+    "excesso": "1,92x em largura e 1,92x em altura"
+  }
+}

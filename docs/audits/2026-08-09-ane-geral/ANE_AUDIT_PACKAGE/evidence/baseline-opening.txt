@@ -1,0 +1,446 @@
+$ pwd && git rev-parse --abbrev-ref HEAD && git rev-parse HEAD
+$REPO
+main
+61f2da448b234bde0318237965ac954c2c591c17
+
+$ git status --porcelain=v1   # capturado antes de qualquer arquivo de auditoria
+ M frontend/src/atlas.ts
+ M frontend/src/composeLayout.ts
+ M frontend/src/main.ts
+ M frontend/src/runtime.ts
+ M frontend/src/runtimeLayer.test.ts
+ M frontend/src/runtimeLayer.ts
+?? docs/PROMPT-AUDITORIA-MESTRE-ANE-GPT-5.6-SOL-2026-08-09.md
+
+$ git diff --stat
+ frontend/src/atlas.ts             | 28 +++++++++++++++++---
+ frontend/src/composeLayout.ts     | 40 +++++++++++++++++++++++++---
+ frontend/src/main.ts              |  2 +-
+ frontend/src/runtime.ts           | 32 +++++++++++++++++++---
+ frontend/src/runtimeLayer.test.ts |  2 ++
+ frontend/src/runtimeLayer.ts      | 56 ++++++++++++++++++++++++++++++---------
+ 6 files changed, 136 insertions(+), 24 deletions(-)
+
+$ git diff
+diff --git a/frontend/src/atlas.ts b/frontend/src/atlas.ts
+index c6d49d9..9c5d382 100644
+--- a/frontend/src/atlas.ts
++++ b/frontend/src/atlas.ts
+@@ -444,7 +444,9 @@ export function createAtlas(
+   const posicoesDoCorpus: LayoutMap = new Map(
+     [...positions].filter(([id]) => idsPorCamada.corpus.has(id)),
+   );
+-  const runtimeLayer = createRuntimeLayer(posicoesDoCorpus);
++  // As hastes da camada viva miram no corpus **e** na nuvem de modelos: o evento anota
++  // uma nota quando tem uma, e o modelo que o executou tem identidade canônica lá.
++  const runtimeLayer = createRuntimeLayer(posicoesDoCorpus, positions);
+   scene.add(runtimeLayer.group);
+   /** Histerese de LOD da camada viva, por entidade. Zerada a cada instantâneo. */
+   const nivelRuntime = new Map<string, LodLevel>();
+@@ -756,8 +758,12 @@ export function createAtlas(
+     const proximos = ativo ? vizinhos.get(ativo) : undefined;
+     for (const id of slots.keys()) {
+       if (id === ativo) corpos.setEmphasis(id, 'highlighted');
+-      else if (ativo && !proximos?.has(id)) corpos.setEmphasis(id, 'dimmed');
+-      else if (!ativo && id === sobrevoado) corpos.setEmphasis(id, 'highlighted');
++      // **O vizinho acende junto.** Ele apenas não escurecia, e ficava indistinguível do
++      // fundo da cena: a linha do foco parecia terminar no vazio, quando o que ela liga
++      // está bem ali. Acender as duas pontas é o que faz a aresta dizer o que ela é.
++      else if (ativo && proximos?.has(id)) corpos.setEmphasis(id, 'highlighted');
++      else if (ativo) corpos.setEmphasis(id, 'dimmed');
++      else if (id === sobrevoado) corpos.setEmphasis(id, 'highlighted');
+       else corpos.setEmphasis(id, 'normal');
+     }
+     // A operação acompanha o foco do corpus: sem isso a camada viva continuaria em
+@@ -1427,6 +1433,7 @@ export function createAtlas(
+     if (recentrar || !readsText(nivel)) aproximarDoRuntime(mutable.runtimeSelected);
+     else ajustarLimiteDoRuntime(mutable.runtimeSelected);
+     desenharVizinhancaViva(mutable.runtimeSelected);
++    acenderOutraPonta(mutable.runtimeSelected ? alvo.linkedEntityId : null);
+     announce(
+       alvo.linkedEntityId
+         ? `${alvo.description} Ligado a ${alvo.linkedEntityId}.`
+@@ -1434,6 +1441,21 @@ export function createAtlas(
+     );
+   }
+ 
++  /**
++   * Acende, no corpus, a entidade do outro lado da haste.
++   *
++   * A haste de um evento ao vivo termina numa nota, e essa nota ficava em contraste
++   * cheio no meio de todas as outras: a linha atravessava a cena e chegava a um painel
++   * indistinguível dos vizinhos. Aceso, ele responde "é aqui" sem que ninguém precise
++   * seguir a linha com os olhos.
++   */
++  function acenderOutraPonta(entityId: string | null): void {
++    for (const id of slots.keys()) {
++      if (entityId === null) corpos.setEmphasis(id, 'normal');
++      else corpos.setEmphasis(id, id === entityId ? 'highlighted' : 'dimmed');
++    }
++  }
++
+   function setReducedMotion(reduced: boolean, report = true): void {
+     mutable.reducedMotion = reduced;
+     orbit.enableDamping = !reduced;
+diff --git a/frontend/src/composeLayout.ts b/frontend/src/composeLayout.ts
+index 5221988..67f90db 100644
+--- a/frontend/src/composeLayout.ts
++++ b/frontend/src/composeLayout.ts
+@@ -61,6 +61,19 @@ const PASSO_ENTRE_ANCORADAS = SEPARACAO_ENTRE_EXECUCOES;
+ /** Teto da elevação de uma execução ancorada, em radianos. Cerca de 50°. */
+ const ELEVACAO_MAXIMA = 0.88;
+ 
++/**
++ * Giro do quórum sobre o azimute que o índice lhe daria.
++ *
++ * Ele nasce no lado que as próprias referências apontam, e isso continua valendo; o giro
++ * o traz para perto do raciocínio, entre ele e o conhecimento e um pouco além do meio —
++ * que é onde ele opera.
++ *
++ * O sinal importa e foi medido: girando para o outro lado ele encosta nos modelos, e a
++ * 2,35 radianos as duas nuvens ficavam a 75 unidades com 305 de raios somados. Aqui as
++ * bordas ficam a 68° da nuvem viva sem invadir nada.
++ */
++const GIRO_DO_QUORUM = -2.2;
++
+ /** O que está em cena: uma camada por vez, ou todas por escolha explícita. */
+ export type SceneView = SceneLayer | 'todas';
+ 
+@@ -143,7 +156,17 @@ export function composeLayout(
+   // atrás. Dentro dessa ordem, o raio ainda cresce com o tamanho das duas pontas, senão
+   // duas nuvens grandes se tocariam.
+   const orbita = orbitarNuvens(extensaoCorpus.radius, [
+-    { chave: 'operacional', raio: extensaoLocal.radius, direcao: direcaoDoObservatorio },
++    // O quórum sobe para perto da altura dos modelos e gira em direção ao raciocínio:
++    // ele deixa de abrir sozinho num lado e passa a ficar entre o que se sabe e o que se
++    // está pensando, que é onde ele opera. `posto` fracionário é o que permite ficar
++    // entre dois degraus da cadeia sem inventar um terceiro.
++    {
++      chave: 'operacional',
++      raio: extensaoLocal.radius,
++      direcao: direcaoDoObservatorio,
++      posto: 1.15,
++      giro: GIRO_DO_QUORUM,
++    },
+     { chave: 'modelos', raio: modelos.extent.radius },
+     // Os provedores ligam **só** aos modelos, e a nada mais: eles compartilham o azimute,
+     // e o que os separa é a altura. Num azimute próprio, a nuvem inteira ia parar a 659
+@@ -447,7 +470,16 @@ function ancorarExecucoes(
+  */
+ function orbitarNuvens(
+   raioDoCorpus: number,
+-  nuvens: { chave: string; raio: number; direcao?: Vec3; azimuteDe?: string }[],
++  nuvens: {
++    chave: string;
++    raio: number;
++    direcao?: Vec3;
++    azimuteDe?: string;
++    /** Posto na cadeia, para a elevação. Fracionário quando se quer ficar entre dois. */
++    posto?: number;
++    /** Giro extra sobre o azimute que o índice daria, em radianos. */
++    giro?: number;
++  }[],
+ ): Record<string, Vec3> {
+   const saida: Record<string, Vec3> = {};
+   const total = Math.max(nuvens.length, 1);
+@@ -467,7 +499,7 @@ function orbitarNuvens(
+     // e ela declara quando é lá que as ligações dela vão.
+     const azimute =
+       (nuvem.azimuteDe !== undefined ? azimutes.get(nuvem.azimuteDe) : undefined) ??
+-      azimuteBase + (2 * Math.PI * indice) / total;
++      azimuteBase + (2 * Math.PI * indice) / total + (nuvem.giro ?? 0);
+     azimutes.set(nuvem.chave, azimute);
+     // **A ordem epistêmica mora na altura, não no raio.**
+     //
+@@ -476,7 +508,7 @@ function orbitarNuvens(
+     // para ficar depois dos modelos, e as suas únicas arestas atravessavam a cena
+     // inteira. Na altura as duas regras convivem: quem liga fica perto no plano, e a
+     // cadeia que produz o corpus se lê subindo.
+-    const elevacao = ELEVACAO_DA_CALOTA * (indice / Math.max(total - 1, 1));
++    const elevacao = ELEVACAO_DA_CALOTA * ((nuvem.posto ?? indice) / Math.max(total - 1, 1));
+     const assentar = (distancia: number): Vec3 => {
+       const noPlano = Math.cos(elevacao) * distancia;
+       return paraMundoNaBase(
+diff --git a/frontend/src/main.ts b/frontend/src/main.ts
+index 5654f8c..a9972b5 100644
+--- a/frontend/src/main.ts
++++ b/frontend/src/main.ts
+@@ -48,7 +48,7 @@ const vivo = exigir<HTMLParagraphElement>('#live');
+ const sumario = exigir<HTMLDivElement>('#a11y');
+ let atlasAtivo: AtlasHandle | null = null;
+ let pararWatcher: (() => void) | null = null;
+-let runtimeAtual: RuntimeSnapshot = { runtimeRevision: 0, events: [] };
++let runtimeAtual: RuntimeSnapshot = { runtimeRevision: 0, events: [], entityByTask: new Map() };
+ let modoTextoAtivo = false;
+ let dockAtivo: DockHandle | null = null;
+ let dadosDoDock: DockData | null = null;
+diff --git a/frontend/src/runtime.ts b/frontend/src/runtime.ts
+index d30fac9..4373999 100644
+--- a/frontend/src/runtime.ts
++++ b/frontend/src/runtime.ts
+@@ -77,6 +77,19 @@ export interface RuntimeEvent {
+ export interface RuntimeSnapshot {
+   runtimeRevision: number;
+   events: RuntimeEvent[];
++  /**
++   * De que entidade do corpus cada tarefa trata, acumulado da trilha **inteira**.
++   *
++   * A cena guarda os últimos 160 eventos, e só o `task_created` costuma declarar a
++   * entidade — nos 160 mais recentes da trilha real, **nenhum** evento a declarava. A
++   * camada viva ficava sem nenhuma linha para o corpus, e o vínculo existia: os eventos
++   * nomeiam a tarefa, e a tarefa nomeia a entidade, algumas centenas de revisões atrás.
++   *
++   * O mapa é montado antes do corte e sobrevive a ele. É memória do que a trilha já
++   * disse, não dedução: se nenhum evento ligou aquela tarefa a uma entidade, ela não
++   * aparece aqui.
++   */
++  entityByTask: ReadonlyMap<string, string>;
+ }
+ 
+ const BACKEND_RUNTIME_EVENTS = 'http://127.0.0.1:8000/runtime/events';
+@@ -262,10 +275,16 @@ export function parseRuntimeSnapshot(value: unknown): RuntimeSnapshot | null {
+     const event = parseRuntimeEvent(candidate);
+     if (event && event.revision <= payload.runtimeRevision) byRevision.set(event.revision, event);
+   }
+-  const events = [...byRevision.values()]
+-    .sort((a, b) => a.revision - b.revision)
+-    .slice(-MAX_VISIBLE_EVENTS);
+-  return { runtimeRevision: payload.runtimeRevision, events };
++  const ordenados = [...byRevision.values()].sort((a, b) => a.revision - b.revision);
++  // O mapa é montado **antes** do corte: é justamente o que o corte descarta.
++  const entityByTask = new Map<string, string>();
++  for (const event of ordenados) {
++    if (event.task && event.entity && !entityByTask.has(event.task)) {
++      entityByTask.set(event.task, event.entity);
++    }
++  }
++  const events = ordenados.slice(-MAX_VISIBLE_EVENTS);
++  return { runtimeRevision: payload.runtimeRevision, events, entityByTask };
+ }
+ 
+ /** Acrescenta replay/live de modo monotônico e mantém a camada visual limitada. */
+@@ -274,9 +293,14 @@ export function advanceRuntime(
+   event: RuntimeEvent,
+ ): RuntimeSnapshot {
+   if (event.revision <= snapshot.runtimeRevision) return snapshot;
++  const entityByTask = new Map(snapshot.entityByTask);
++  if (event.task && event.entity && !entityByTask.has(event.task)) {
++    entityByTask.set(event.task, event.entity);
++  }
+   return {
+     runtimeRevision: event.revision,
+     events: [...snapshot.events, event].slice(-MAX_VISIBLE_EVENTS),
++    entityByTask,
+   };
+ }
+ 
+diff --git a/frontend/src/runtimeLayer.test.ts b/frontend/src/runtimeLayer.test.ts
+index 1e5106d..7f9f5bb 100644
+--- a/frontend/src/runtimeLayer.test.ts
++++ b/frontend/src/runtimeLayer.test.ts
+@@ -28,6 +28,7 @@ function liveEvent(
+ function liveSnapshot(): RuntimeSnapshot {
+   return {
+     runtimeRevision: 10,
++    entityByTask: new Map(),
+     events: [
+       // Sem provedor nem endpoint: exercita a âncora de ator, que é o recuo para
+       // eventos que nenhum modelo produziu — tarefa criada pelo worker, por exemplo.
+@@ -165,6 +166,7 @@ describe('o painel vivo diz o que está acontecendo', () => {
+   it('a narração do orquestrador, quando existir, tem precedência', () => {
+     const projection = projectRuntime({
+       runtimeRevision: 1,
++      entityByTask: new Map(),
+       events: [liveEvent(1, 'call_started', { narration: 'Perguntando ao modelo se a nota se sustenta.' })],
+     });
+     const texto = textoDe(projection.nodes.find((n) => n.id.startsWith('runtime:event:'))!);
+diff --git a/frontend/src/runtimeLayer.ts b/frontend/src/runtimeLayer.ts
+index dd717de..c58037a 100644
+--- a/frontend/src/runtimeLayer.ts
++++ b/frontend/src/runtimeLayer.ts
+@@ -182,6 +182,11 @@ export function projectRuntime(snapshot: RuntimeSnapshot): Projection {
+ 
+   for (const event of [...snapshot.events].sort((a, b) => a.revision - b.revision)) {
+     const id = `runtime:event:${event.id}`;
++    // A entidade que o evento toca, dele ou **da tarefa dele**. Só o `task_created`
++    // costuma declará-la, e ele quase sempre caiu fora da janela de 160 eventos: nos 160
++    // mais recentes da trilha real, nenhum evento a declarava, e a camada viva não tinha
++    // uma única linha para o corpus. Herdar da tarefa é o que a própria trilha afirma.
++    const entidade = event.entity ?? (event.task ? snapshot.entityByTask.get(event.task) : undefined);
+     // A âncora do evento: o modelo que o produziu, quando ele se declara; o ator, quando
+     // não há modelo. É isto que dá à nuvem viva a hierarquia que ela não tinha.
+     if (event.provider && event.endpoint) {
+@@ -233,7 +238,9 @@ export function projectRuntime(snapshot: RuntimeSnapshot): Projection {
+     }
+ 
+     const kind = KIND_BY_EVENT[event.type];
+-    const subject = event.entity ?? event.task ?? event.provider;
++    // O assunto preferido é a entidade: um título com o nome da nota diz do que o evento
++    // trata; um com o identificador da tarefa repete um hash.
++    const subject = entidade ?? event.task ?? event.provider;
+     const label = runtimeEventLabel(event.type);
+     const panelId =
+       event.panelId ??
+@@ -250,7 +257,7 @@ export function projectRuntime(snapshot: RuntimeSnapshot): Projection {
+       ...(event.family ? { family: event.family } : {}),
+       ...(event.role ? { role: event.role } : {}),
+       ...(event.task ? { task: event.task } : {}),
+-      ...(event.entity ? { entity: event.entity } : {}),
++      ...(entidade ? { entity: entidade } : {}),
+       ...(event.narration ? { narration: event.narration } : {}),
+       ...(panelId ? { panelId } : {}),
+       ...(event.decision ? { decision: event.decision } : {}),
+@@ -275,12 +282,12 @@ export function projectRuntime(snapshot: RuntimeSnapshot): Projection {
+ 
+     const predecessors = new Set<string>();
+     if (event.task && lastByTask.has(event.task)) predecessors.add(lastByTask.get(event.task)!);
+-    if (event.entity && lastByEntity.has(event.entity)) {
+-      predecessors.add(lastByEntity.get(event.entity)!);
++    if (entidade && lastByEntity.has(entidade)) {
++      predecessors.add(lastByEntity.get(entidade)!);
+     }
+     for (const predecessor of predecessors) connect(predecessor, id);
+     if (event.task) lastByTask.set(event.task, id);
+-    if (event.entity) lastByEntity.set(event.entity, id);
++    if (entidade) lastByEntity.set(entidade, id);
+   }
+ 
+   const ids = new Map(nodes.map((node) => [node.id, node]));
+@@ -341,6 +348,7 @@ export function placeRuntime(
+   projection: Projection,
+   basePositions: LayoutMap,
+   origem: Vec3 = { x: 0, y: 0, z: 0 },
++  alvosDeHaste: LayoutMap = basePositions,
+ ): RuntimePlacement {
+   const ancoraDoNo = new Map<string, string>();
+   for (const edge of projection.edges) {
+@@ -378,14 +386,34 @@ export function placeRuntime(
+     positions.set(id, { x: p.x + origem.x, y: p.y + origem.y, z: p.z + origem.z });
+   }
+ 
++  // As hastes: o que a camada viva toca fora dela.
++  //
++  // Havia só uma origem — a entidade do corpus que o evento anota — e ela secou. Medido
++  // na trilha real, nenhum dos 160 eventos visíveis declara entidade, e as tarefas
++  // recentes são de revisão de proposta e de divergência entre modelos: elas não tratam
++  // de nota nenhuma. Não há vínculo a desenhar ali, e inventar um seria mentir.
++  //
++  // O que **existe** em quase todo evento é o modelo que o executou, e ele tem identidade
++  // canônica na nuvem de modelos. Ligar o modelo local ao canônico é o vínculo que a
++  // trilha de fato afirma, e é ele que tira a camada viva do isolamento.
+   const tethers: RuntimePlacement['tethers'] = [];
++  const amarrar = (node: ProjectionNode, alvo: string, mapa: LayoutMap): void => {
++    const base = mapa.get(alvo);
++    const placed = positions.get(node.id);
++    if (!base || !placed) return;
++    tethers.push({ from: base, to: placed, runtimeNodeId: node.id, entityId: alvo });
++  };
+   for (const node of projection.nodes) {
+     const entityId = node.operational?.entity;
+-    if (!entityId) continue;
+-    const base = basePositions.get(entityId);
+-    const placed = positions.get(node.id);
+-    if (!base || !placed) continue;
+-    tethers.push({ from: base, to: placed, runtimeNodeId: node.id, entityId });
++    if (entityId) amarrar(node, entityId, basePositions);
++    // Uma haste por **modelo**, e não por evento: os eventos já pendem do modelo dentro
++    // da nuvem, e repetir a ligação em cada um encheria a cena de linhas paralelas
++    // dizendo a mesma coisa.
++    if (!node.id.startsWith('runtime:model:')) continue;
++    const provider = node.operational?.provider;
++    const endpoint = node.operational?.endpoint;
++    if (provider === undefined || endpoint === undefined) continue;
++    amarrar(node, `op/model/${provider}/${endpoint}`, alvosDeHaste);
+   }
+   return { positions, tethers };
+ }
+@@ -478,7 +506,10 @@ export function runtimeOrigin(basePositions: LayoutMap, ownRadius: number): Vec3
+ /** Folga entre a borda do corpus e a borda da nuvem viva. */
+ const FOLGA_ATE_O_CORPUS = 60;
+ 
+-export function createRuntimeLayer(basePositions: LayoutMap): RuntimeLayer {
++export function createRuntimeLayer(
++  basePositions: LayoutMap,
++  alvosDeHaste: LayoutMap = basePositions,
++): RuntimeLayer {
+   const group = new THREE.Group();
+   group.name = 'runtime-live-layer';
+   let bodies: PanelBodies | null = null;
+@@ -527,7 +558,7 @@ export function createRuntimeLayer(basePositions: LayoutMap): RuntimeLayer {
+       );
+       // Duas passagens: a primeira mede o tamanho da nuvem no frame dela, a segunda a
+       // assenta no mundo já sabendo o quanto precisa se afastar do corpus.
+-      const local = placeRuntime(projection, basePositions);
++      const local = placeRuntime(projection, basePositions, undefined, alvosDeHaste);
+       let raioProprio = 1;
+       for (const p of local.positions.values()) {
+         raioProprio = Math.max(raioProprio, Math.hypot(p.x, p.y, p.z));
+@@ -536,6 +567,7 @@ export function createRuntimeLayer(basePositions: LayoutMap): RuntimeLayer {
+         projection,
+         basePositions,
+         runtimeOrigin(basePositions, raioProprio),
++        alvosDeHaste,
+       );
+ 
+       // O painel operacional também é o nó: mesma gramática do corpus, mesma
+
+$ git log --oneline -40
+61f2da4 Faz o painel do raciocínio se comportar como o do conhecimento
+78ac5df Renomeia as nuvens, unifica o painel do raciocínio e junta a nebulosa
+d8264f4 Assenta as nuvens numa calota epistêmica e conserta a expansão contada duas vezes
+aa0c634 Abre o acervo para as centenas, separa provedor de modelo e faz o painel vivo falar
+97ad5b1 Aperta a casca do quórum e tira o nome da nuvem da disputa por atenção
+36917c2 Tira as nuvens do plano e acende o link do que se seleciona ao vivo
+ee94fe0 Dá hierarquia à nuvem viva e conserta o recorte que a escondia
+d1ad39a Encolhe o mundo, libera a câmera e dá nome a cada nuvem
+5eef47c Traz o acervo inteiro de modelos e afasta o que estava encostado
+1021763 Dá mapa à nuvem de modelos e põe cada execução perto do que ela avaliou
+dbaeabf Põe o observatório do lado do corpus que ele de fato referencia
+156d7f3 Faz o texto seguir a silhueta, e o link em foco engrossar em vez de só existir
+28ccc4d Faz a forma nova valer para tudo: halo, texto, foco e as pontas das arestas
+b197b30 Tira o título de dentro da placa e deixa todo painel escrever
+d141ba7 Dá silhueta ao tipo, liga as nuvens e tira quatro atalhos que sobravam
+7289a1f Faz a trilha ao vivo dizer o que está sendo feito, e não só que algo aconteceu
+6b64792 Devolve a órbita, porque o voo livre não melhorou o que se propunha a melhorar
+8a3f894 Troca a órbita por voo livre, que é o que faltava para W significar frente
+b92095e Põe o conteúdo da nota na nota, que até agora só falava sobre si mesma
+e868239 Deixa o painel escolhido mostrar o texto inteiro, rolando sob o próprio recorte
+30704e3 Faz o clique cair no painel clicado, e o teclado subir em vez de repetir a roda
+af1111a Registra o fechamento de 3.5-D, com o que ficou de fora dito por extenso
+2a4bf70 Aceita dois-pontos em identificador de endpoint, que travava o quórum inteiro
+36fe753 Faz o painel de quórum dizer o que a execução fez, não só que ela existiu
+7923e32 Devolve a tela ao Atlas, e faz a aproximação parar onde o painel deixa de caber
+b6fe0e8 Tira as gaiolas de cena, que tinham virado a linguagem visual do produto
+7a3bac3 Faz a relação ser desenhada uma vez, sem deixar de ser declarada duas
+6ce91a4 Dá nomes distintos aos dois denominadores, e admite a regressão angular
+eb050d6 Separa notas pelo tamanho da placa, e não pelo raio de uma esfera que saiu de cena
+b69244e Tira a operação de dentro do mapa do corpus, que ela vinha reescalando calada
+713df2a Corrige quatro enunciados que a auditoria afirmou além da evidência
+f15adc0 Mede o atlas antes de acusá-lo, e desfaz três suspeitas que o vídeo levantava
+1457d93 Separa modelo fora do plano de chave recusada, e dá ao smoke uma varredura
+3a1ad90 Troca a rota que prova a credencial da Ollama, medindo desta vez os dois lados
+f2d0bc3 Faz a chave digitada sobreviver à confirmação, que até agora a engolia calada
+d731356 Faz a Ollama declarar janela e capacidade, e a classificação parar de exigir um dialeto
+0c8079a Abre o painel ao Ollama Cloud, e separa provar chave de listar modelos
+f26f102 Liga o painel ao que o Vault já sabe, e a chave ao cofre do sistema
+a14d18d Dá ao Vault um ponto único de controle, e à câmera o que sobra da janela
+c4709c2 Faz o degrau de LOD mudar o que se lê, e a relação esperar a pergunta
+
+$ git rev-list --count HEAD
+94
+
+$ git tag --list
+baseline-pos-migracao-2026-07-30
+
+$ git remote -v
+[no output]
+
+$ git count-objects -vH
+count: 1398
+size: 20.30 MiB
+in-pack: 0
+packs: 0
+size-pack: 0 bytes
+prune-packable: 0
+garbage: 0
+size-garbage: 0 bytes

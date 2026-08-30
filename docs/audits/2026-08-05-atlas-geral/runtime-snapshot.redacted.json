@@ -1,0 +1,242 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-05T20:57:42+00:00",
+  "providers": [
+    {
+      "id": "google",
+      "name": "Google (Gemini)",
+      "status": "configurado",
+      "detail": "",
+      "key_configured": true,
+      "key_hint": "<redigido>",
+      "endpoint_count": 58,
+      "enabled": true,
+      "supports_custom_endpoint": false,
+      "unavailable": {}
+    },
+    {
+      "id": "groq",
+      "name": "Groq",
+      "status": "configurado",
+      "detail": "",
+      "key_configured": true,
+      "key_hint": "<redigido>",
+      "endpoint_count": 15,
+      "enabled": true,
+      "supports_custom_endpoint": false,
+      "unavailable": {}
+    },
+    {
+      "id": "nvidia",
+      "name": "NVIDIA",
+      "status": "configurado",
+      "detail": "",
+      "key_configured": true,
+      "key_hint": "<redigido>",
+      "endpoint_count": 102,
+      "enabled": true,
+      "supports_custom_endpoint": false,
+      "unavailable": {}
+    },
+    {
+      "id": "ollama",
+      "name": "Ollama Cloud",
+      "status": "configurado",
+      "detail": "",
+      "key_configured": true,
+      "key_hint": "<redigido>",
+      "endpoint_count": 18,
+      "enabled": true,
+      "supports_custom_endpoint": false,
+      "unavailable": {}
+    }
+  ],
+  "workers": [
+    {
+      "id": "proponente",
+      "role": "proponente",
+      "class_name": "produtor",
+      "summary": "produz a alteração",
+      "area": "runtime/proposals/",
+      "status": "espera",
+      "provider": "google",
+      "model": "gemini-3.5-flash-lite",
+      "resolved_by": "auto",
+      "reasoning": {
+        "supported": false,
+        "options": [],
+        "value": null,
+        "reason": "o catálogo não declara níveis de raciocínio para este endpoint"
+      },
+      "concurrency": 1,
+      "concurrency_min": 0,
+      "concurrency_max": 1,
+      "enabled": true,
+      "running": 0,
+      "detail": "resolvido pela política canônica"
+    },
+    {
+      "id": "verificador-factual",
+      "role": "verificador-factual",
+      "class_name": "avaliador",
+      "summary": "procura erros objetivos",
+      "area": "knowledge/",
+      "status": "espera",
+      "provider": "google",
+      "model": "gemini-3.5-flash-lite",
+      "resolved_by": "auto",
+      "reasoning": {
+        "supported": false,
+        "options": [],
+        "value": null,
+        "reason": "o catálogo não declara níveis de raciocínio para este endpoint"
+      },
+      "concurrency": 3,
+      "concurrency_min": 0,
+      "concurrency_max": 3,
+      "enabled": true,
+      "running": 0,
+      "detail": "resolvido pela política canônica"
+    },
+    {
+      "id": "critico-epistemologico",
+      "role": "critico-epistemologico",
+      "class_name": "avaliador",
+      "summary": "avalia força de claims e relações",
+      "area": "knowledge/",
+      "status": "espera",
+      "provider": "google",
+      "model": "gemini-3.5-flash-lite",
+      "resolved_by": "auto",
+      "reasoning": {
+        "supported": false,
+        "options": [],
+        "value": null,
+        "reason": "o catálogo não declara níveis de raciocínio para este endpoint"
+      },
+      "concurrency": 3,
+      "concurrency_min": 0,
+      "concurrency_max": 3,
+      "enabled": true,
+      "running": 0,
+      "detail": "resolvido pela política canônica"
+    },
+    {
+      "id": "revisor-estrutural",
+      "role": "revisor-estrutural",
+      "class_name": "avaliador",
+      "summary": "verifica compatibilidade com o Vault",
+      "area": "knowledge/",
+      "status": "espera",
+      "provider": "google",
+      "model": "gemini-3.5-flash-lite",
+      "resolved_by": "auto",
+      "reasoning": {
+        "supported": false,
+        "options": [],
+        "value": null,
+        "reason": "o catálogo não declara níveis de raciocínio para este endpoint"
+      },
+      "concurrency": 3,
+      "concurrency_min": 0,
+      "concurrency_max": 3,
+      "enabled": true,
+      "running": 0,
+      "detail": "resolvido pela política canônica"
+    },
+    {
+      "id": "revisor-interdisciplinar",
+      "role": "revisor-interdisciplinar",
+      "class_name": "avaliador",
+      "summary": "avalia se as conexões são reais",
+      "area": "knowledge/",
+      "status": "espera",
+      "provider": "google",
+      "model": "gemini-3.5-flash-lite",
+      "resolved_by": "auto",
+      "reasoning": {
+        "supported": false,
+        "options": [],
+        "value": null,
+        "reason": "o catálogo não declara níveis de raciocínio para este endpoint"
+      },
+      "concurrency": 3,
+      "concurrency_min": 0,
+      "concurrency_max": 3,
+      "enabled": true,
+      "running": 0,
+      "detail": "resolvido pela política canônica"
+    },
+    {
+      "id": "sintetizador",
+      "role": "sintetizador",
+      "class_name": "avaliador",
+      "summary": "resolve divergências entre avaliações",
+      "area": "runtime/quorum/",
+      "status": "espera",
+      "provider": "google",
+      "model": "gemini-3.5-flash-lite",
+      "resolved_by": "auto",
+      "reasoning": {
+        "supported": false,
+        "options": [],
+        "value": null,
+        "reason": "o catálogo não declara níveis de raciocínio para este endpoint"
+      },
+      "concurrency": 1,
+      "concurrency_min": 0,
+      "concurrency_max": 1,
+      "enabled": true,
+      "running": 0,
+      "detail": "resolvido pela política canônica"
+    },
+    {
+      "id": "arbitro",
+      "role": "arbitro",
+      "class_name": "avaliador",
+      "summary": "decide apenas quando o quórum empata",
+      "area": "runtime/quorum/",
+      "status": "espera",
+      "provider": "google",
+      "model": "gemini-3.5-flash-lite",
+      "resolved_by": "auto",
+      "reasoning": {
+        "supported": false,
+        "options": [],
+        "value": null,
+        "reason": "o catálogo não declara níveis de raciocínio para este endpoint"
+      },
+      "concurrency": 1,
+      "concurrency_min": 0,
+      "concurrency_max": 1,
+      "enabled": true,
+      "running": 0,
+      "detail": "resolvido pela política canônica"
+    }
+  ],
+  "operation": {
+    "auto": true,
+    "active_workers": 7,
+    "capacity": 15,
+    "queued": 21,
+    "running": 0,
+    "last_cycle": "2026-08-05T13:13:05+00:00",
+    "next_run": null,
+    "calls": null,
+    "budget": "6 chamadas por execução",
+    "failures": [
+      "aut-0adbfddb7d2c712c8c51: 1 avaliações válidas; mínimo é 3",
+      "aut-0ea75c307e087a7a73f6: 0 avaliações válidas; mínimo é 3",
+      "aut-1e8306f76acaf4fec07c: groq/llama-3.3-70b-versatile: deixaria painel sem diversidade mínima; groq/llama-3.1-8b-instant: deixaria painel sem diversidade mínima; nvidia/z-ai/glm-5.2: deixaria painel sem diversidade mínima",
+      "aut-221b856e9b7d14e573d3: groq/llama-3.3-70b-versatile: deixaria painel sem diversidade mínima; groq/llama-3.1-8b-instant: deixaria painel sem diversidade mínima; nvidia/z-ai/glm-5.2: deixaria painel sem diversidade mínima",
+      "aut-2a277a1e9cdd7f9bac0f: groq/llama-3.3-70b-versatile: deixaria painel sem diversidade mínima; groq/llama-3.1-8b-instant: deixaria painel sem diversidade mínima; nvidia/z-ai/glm-5.2: deixaria painel sem diversidade mínima"
+    ],
+    "last_audit": null,
+    "unavailable": {
+      "next_run": "a próxima execução depende do worker, que roda fora da API",
+      "calls": "o consumo por execução não é persistido entre execuções",
+      "last_audit": "`make audit` roda fora da API e não deixa registro lido aqui"
+    }
+  },
+  "notices": []
+}

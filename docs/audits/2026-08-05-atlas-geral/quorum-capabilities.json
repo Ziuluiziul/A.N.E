@@ -1,0 +1,79 @@
+{
+  "descricao": "Estado real do quórum, medido nos artefatos persistidos em runtime/quorum/.",
+  "implementado": {
+    "selecao_de_proponente": true,
+    "painel_de_tres_avaliadores": true,
+    "proponente_fora_do_painel": true,
+    "diversidade_minima_2_provedores": true,
+    "diversidade_minima_2_familias": true,
+    "votos_estruturados": true,
+    "validacao_de_schema_por_voto": true,
+    "apuracao": true,
+    "sintese": true,
+    "arbitragem_escalate": true,
+    "persistencia": true,
+    "proveniencia_provider_endpoint_family_role": true,
+    "remocao_de_bloco_de_raciocinio": true
+  },
+  "exemplo_verificado": {
+    "painel": "0b13e3a58322",
+    "proponente": {
+      "provider": "google",
+      "endpoint": "gemini-3.5-flash-lite",
+      "family": "gemini"
+    },
+    "membros": [
+      {
+        "provider": "groq",
+        "endpoint": "qwen/qwen3.6-27b",
+        "family": "qwen3",
+        "role": "verificador-factual"
+      },
+      {
+        "provider": "groq",
+        "endpoint": "llama-3.3-70b-versatile",
+        "family": "llama",
+        "role": "critico-epistemologico"
+      },
+      {
+        "provider": "nvidia",
+        "endpoint": "z-ai/glm-5.2",
+        "family": "glm",
+        "role": "revisor-estrutural"
+      }
+    ],
+    "decisao": {
+      "outcome": "escalate",
+      "valid_vote_count": 2,
+      "minimo": 3,
+      "provider_count": 2,
+      "family_count": 2,
+      "tally": {
+        "approve": 1,
+        "reject": 0,
+        "revise": 1,
+        "abstain": 0
+      }
+    }
+  },
+  "estado_atual": {
+    "paineis_persistidos": 35,
+    "decisoes_persistidas": 34,
+    "fila": 21,
+    "rodando": 0,
+    "ultimo_ciclo": "2026-08-05T13:13:05+00:00",
+    "propostas_promovidas": 0,
+    "bloqueio": "seleção de proponente falha: o painel exige 3 endpoints e o proponente precisa ficar fora deles, logo são necessários 4+ endpoints úteis simultâneos"
+  },
+  "nao_exposto_na_cena": [
+    "estado do worker por execução",
+    "duração e horário",
+    "tokens e custo",
+    "resumo da abordagem",
+    "hipóteses",
+    "artefato parcial ou diff",
+    "objeções e respostas",
+    "divergências entre avaliadores",
+    "justificativa decisória"
+  ]
+}

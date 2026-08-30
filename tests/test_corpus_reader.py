@@ -23,7 +23,7 @@ from vault.corpus import CorpusReader
 from vault.projection import build_projection
 
 BASELINE_NOTES = 84
-BASELINE_WIKILINKS = 672
+BASELINE_WIKILINKS = 670
 BASELINE_CLAIMS = 267
 
 CANONICAL_STATUSES = {

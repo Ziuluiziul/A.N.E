@@ -1,0 +1,56 @@
+COMMAND: make audit
+python3 tools/audit.py
+notas markdown ................. 84
+documentos na raiz ............. 2
+wikilinks ...................... 672
+wikilinks quebrados ............ 0
+wikilinks sem relation: ........ 0
+relation: fora do vocabulário .. 0
+notas órfãs .................... 0
+MOCs sem links ................. 0
+frontmatter ausente/inválido ... 0
+linhas definidoras de claims ... 267
+IDs de claim únicos ............ 267
+IDs de claim duplicados ........ 0 
+
+SHA-256 do manifesto ........... e48f47915db6524005241f182cfe98a8bf108c7f6d33d47743061510193da2b3
+
+APROVADO — nenhuma das categorias estruturais implementadas acusou defeito.
+EXIT_CODE=0
+ELAPSED_MS=64
+
+COMMAND: make test
+uv run pytest -q
+........................................................................ [ 18%]
+........................................................................ [ 36%]
+........................................................................ [ 55%]
+........................................................................ [ 73%]
+........................................................................ [ 91%]
+................................                                         [100%]
+392 passed in 10.78s
+cd frontend && pnpm run typecheck && pnpm run test
+! Corepack is about to download https://registry.npmjs.org/pnpm/-/pnpm-11.18.0.tgz
+$ tsc --noEmit
+$ vitest run
+
+ RUN  v4.1.10 $REPO/frontend
+
+
+ Test Files  18 passed (18)
+      Tests  302 passed (302)
+   Start at  00:09:56
+   Duration  4.48s (transform 1.25s, setup 0ms, import 3.44s, tests 4.42s, environment 5ms)
+
+EXIT_CODE=0
+ELAPSED_MS=24251
+
+COMMAND: make lint
+uv run ruff check .
+All checks passed!
+uv run mypy
+Success: no issues found in 99 source files
+cd frontend && pnpm run lint
+$ eslint .
+EXIT_CODE=0
+ELAPSED_MS=5570
+

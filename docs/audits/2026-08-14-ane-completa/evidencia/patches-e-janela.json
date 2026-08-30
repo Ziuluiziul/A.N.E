@@ -1,0 +1,223 @@
+{
+  "head": "30dd91b21fe9",
+  "total": 24,
+  "com_alvo_intacto": 24,
+  "patches": [
+    {
+      "painel": "06e34107a02e",
+      "base": "d8b5f5a66790",
+      "decisao": "escalate",
+      "alvos": [
+        "Cognição/Bases Neurais da Cognição.md"
+      ],
+      "alvo_intacto": true
+    },
+    {
+      "painel": "1045607d147f",
+      "base": "d32ea675c1de",
+      "decisao": "escalate",
+      "alvos": [
+        "Física/Colapso Objetivo, Decoerência e Biofísica Quântica.md"
+      ],
+      "alvo_intacto": true
+    },
+    {
+      "painel": "13979e3ba887",
+      "base": "b8cd48d604b6",
+      "decisao": "escalate",
+      "alvos": [
+        "Física/Gravidade Quântica em Loop e Cosmologia Quântica.md"
+      ],
+      "alvo_intacto": true
+    },
+    {
+      "painel": "247876ebfc74",
+      "base": "1328e36702f9",
+      "decisao": "escalate",
+      "alvos": [
+        "IA/Features de Fourier e Mitigação do Viés Espectral.md"
+      ],
+      "alvo_intacto": true
+    },
+    {
+      "painel": "2c0bf6c92124",
+      "base": "d8b5f5a66790",
+      "decisao": "escalate",
+      "alvos": [
+        "Física/Fundamentos de Termodinâmica e Mecânica Estatística.md"
+      ],
+      "alvo_intacto": true
+    },
+    {
+      "painel": "35f8b555d2b9",
+      "base": "30eedfcb6b80",
+      "decisao": "escalate",
+      "alvos": [
+        "Física/Gravidade com Torsão e Cosmologias de Bounce.md"
+      ],
+      "alvo_intacto": true
+    },
+    {
+      "painel": "35fb6c1fa2bb",
+      "base": "ddf465e149aa",
+      "decisao": "escalate",
+      "alvos": [
+        "Cognição/Bases Neurais da Cognição.md"
+      ],
+      "alvo_intacto": true
+    },
+    {
+      "painel": "3637399bdb0b",
+      "base": "d2765e829942",
+      "decisao": "escalate",
+      "alvos": [
+        "Física/Seleção Natural Cosmológica.md"
+      ],
+      "alvo_intacto": true
+    },
+    {
+      "painel": "52b43fd27d7f",
+      "base": "88e1bb50c064",
+      "decisao": "escalate",
+      "alvos": [
+        "Física/Fundamentos de Mecânica Quântica e Sistemas Abertos.md"
+      ],
+      "alvo_intacto": true
+    },
+    {
+      "painel": "59e32f5df5d5",
+      "base": "d32ea675c1de",
+      "decisao": "promote",
+      "alvos": [
+        "Física/Gravidade Quântica em Loop e Cosmologia Quântica.md"
+      ],
+      "alvo_intacto": true
+    },
+    {
+      "painel": "63ef290b6f3d",
+      "base": "ccec25194a59",
+      "decisao": "escalate",
+      "alvos": [
+        "Física/Seleção Natural Cosmológica.md"
+      ],
+      "alvo_intacto": true
+    },
+    {
+      "painel": "6432bf25c998",
+      "base": "b8cd48d604b6",
+      "decisao": "escalate",
+      "alvos": [
+        "Física/Fundamentos de Mecânica Quântica e Sistemas Abertos.md"
+      ],
+      "alvo_intacto": true
+    },
+    {
+      "painel": "6d4421ed50d8",
+      "base": "58fde362dbdd",
+      "decisao": "reject",
+      "alvos": [
+        "Física/Seleção Natural Cosmológica.md"
+      ],
+      "alvo_intacto": true
+    },
+    {
+      "painel": "7aa8c6195046",
+      "base": "f98814968a1d",
+      "decisao": "escalate",
+      "alvos": [
+        "Física/Cordas, Dimensões Extras e Holografia.md"
+      ],
+      "alvo_intacto": true
+    },
+    {
+      "painel": "7cb9ebc3fbb4",
+      "base": "ddf465e149aa",
+      "decisao": "escalate",
+      "alvos": [
+        "Física/Fronteiras da Física — Monitor de Evidências.md"
+      ],
+      "alvo_intacto": true
+    },
+    {
+      "painel": "87300e9cd7ae",
+      "base": "227102bda20d",
+      "decisao": "escalate",
+      "alvos": [
+        "Cognição/Bases Neurais da Cognição.md"
+      ],
+      "alvo_intacto": true
+    },
+    {
+      "painel": "90dc425242ac",
+      "base": "b8cd48d604b6",
+      "decisao": "escalate",
+      "alvos": [
+        "Cognição/Bases Neurais da Cognição.md"
+      ],
+      "alvo_intacto": true
+    },
+    {
+      "painel": "9680a022c82e",
+      "base": "ccec25194a59",
+      "decisao": "escalate",
+      "alvos": [
+        "Física/Energia Escura e Quintessência.md"
+      ],
+      "alvo_intacto": true
+    },
+    {
+      "painel": "98683afdf1c4",
+      "base": "ddf465e149aa",
+      "decisao": "escalate",
+      "alvos": [
+        "Física/Fronteiras da Física — Monitor de Evidências.md"
+      ],
+      "alvo_intacto": true
+    },
+    {
+      "painel": "c625f49959e7",
+      "base": "58fde362dbdd",
+      "decisao": "escalate",
+      "alvos": [
+        "Física/Fundamentos de Termodinâmica e Mecânica Estatística.md"
+      ],
+      "alvo_intacto": true
+    },
+    {
+      "painel": "ca4751145a13",
+      "base": "b8cd48d604b6",
+      "decisao": "escalate",
+      "alvos": [
+        "Física/Gravidade Quântica em Loop e Cosmologia Quântica.md"
+      ],
+      "alvo_intacto": true
+    },
+    {
+      "painel": "eb968493221a",
+      "base": "d32ea675c1de",
+      "decisao": "escalate",
+      "alvos": [
+        "Física/Gravidade com Torsão e Cosmologias de Bounce.md"
+      ],
+      "alvo_intacto": true
+    },
+    {
+      "painel": "ef18f1f1d152",
+      "base": "d32ea675c1de",
+      "decisao": "escalate",
+      "alvos": [
+        "Física/Gravidade Quântica em Loop e Cosmologia Quântica.md"
+      ],
+      "alvo_intacto": true
+    },
+    {
+      "painel": "f15f4231fc95",
+      "base": "b8cd48d604b6",
+      "decisao": "escalate",
+      "alvos": [
+        "Física/Seleção Natural Cosmológica.md"
+      ],
+      "alvo_intacto": true
+    }
+  ]
+}

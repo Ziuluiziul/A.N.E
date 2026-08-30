@@ -6,7 +6,7 @@ import fcntl
 import math
 import os
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -144,6 +144,18 @@ def sanitize_draft(
     )
 
 
+def _strictly_increasing(events: Iterable[OperationalEvent]) -> list[OperationalEvent]:
+    """Mantém só a subsequência gulosa de revisões estritamente crescentes."""
+    accepted: list[OperationalEvent] = []
+    last_revision = 0
+    for event in events:
+        if event.revision <= last_revision:
+            continue
+        last_revision = event.revision
+        accepted.append(event)
+    return accepted
+
+
 class OperationalEventStore:
     """Persiste eventos entre processos sem criar diretório enquanto o fluxo está vazio."""
 
@@ -188,9 +200,15 @@ class OperationalEventStore:
         Uma cauda parcial após queda de energia é ausência temporária, não motivo para
         derrubar o Atlas. A próxima leitura a verá completa; uma linha adulterada nunca
         é projetada nem governa a próxima revisão válida.
+
+        ``after_revision == 0`` com ``limit`` lê da cauda: o snapshot do Atlas não
+        varre o jsonl inteiro. ``after_revision > 0`` permanece o scan linear que
+        pára ao completar o lote.
         """
         if not self.log_path.is_file() or self.log_path.is_symlink():
             return []
+        if after_revision == 0 and limit is not None:
+            return self._load_from_tail(limit)
         flags = os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW
         try:
             descriptor = os.open(self.log_path, flags)
@@ -203,41 +221,65 @@ class OperationalEventStore:
         last_revision = 0
         with os.fdopen(descriptor, "rb") as stream:
             for line in stream:
-                try:
-                    raw = orjson.loads(line)
-                    event = OperationalEvent.model_validate(raw)
-                    sanitized = sanitize_draft(
-                        OperationalEventDraft(
-                            type=event.type,
-                            actor=event.actor,
-                            provider=event.provider,
-                            endpoint=event.endpoint,
-                            task=event.task,
-                            entity=event.entity,
-                            before=event.before,
-                            after=event.after,
-                            metadata=event.metadata,
-                        ),
-                        self.redact,
-                    )
-                except (
-                    orjson.JSONDecodeError,
-                    ValidationError,
-                    OperationalEventStoreError,
-                    TypeError,
-                ):
+                event = self._validated_line(line)
+                if event is None:
                     continue
                 if event.revision <= last_revision:
                     continue
                 last_revision = event.revision
                 if event.revision <= after_revision:
                     continue
-                events.append(event.model_copy(update=sanitized.model_dump()))
+                events.append(event)
                 if limit is not None and after_revision > 0 and len(events) >= limit:
                     break
-        if limit is not None and after_revision == 0 and len(events) > limit:
-            return events[-limit:]
         return events
+
+    def _load_from_tail(self, limit: int) -> list[OperationalEvent]:
+        """Últimos ``limit`` eventos válidos, sem varrer o arquivo desde o início."""
+        if limit <= 0:
+            return []
+        flags = os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW
+        try:
+            descriptor = os.open(self.log_path, flags)
+        except OSError as error:
+            raise OperationalEventStoreError(
+                "event log não pôde ser lido com segurança"
+            ) from error
+        try:
+            size = os.fstat(descriptor).st_size
+            cursor = size
+            pending = b""
+            chunk_size = 64 * 1024
+            newest_first: list[OperationalEvent] = []
+            while cursor > 0:
+                amount = min(chunk_size, cursor)
+                cursor -= amount
+                os.lseek(descriptor, cursor, os.SEEK_SET)
+                pending = os.read(descriptor, amount) + pending
+                lines = pending.splitlines()
+                # O primeiro fragmento pode estar incompleto enquanto ainda há bytes
+                # à esquerda. Todas as demais linhas já são candidatas completas.
+                if cursor > 0:
+                    complete = lines[1:]
+                    pending = lines[0] if lines else pending
+                else:
+                    complete = lines
+                    pending = b""
+                for line in reversed(complete):
+                    event = self._validated_line(line)
+                    if event is None:
+                        continue
+                    newest_first.append(event)
+                    accepted = _strictly_increasing(reversed(newest_first))
+                    if len(accepted) >= limit:
+                        return accepted[-limit:]
+            trailing = self._validated_line(pending)
+            if trailing is not None:
+                newest_first.append(trailing)
+            accepted = _strictly_increasing(reversed(newest_first))
+            return accepted[-limit:]
+        finally:
+            os.close(descriptor)
 
     def latest_revision(self) -> int:
         event = self._latest_valid_event()

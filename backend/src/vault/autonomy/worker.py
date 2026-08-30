@@ -75,7 +75,7 @@ OPERATIONAL_BLOCK_OUTCOMES = frozenset(
     }
 )
 
-_PROPOSER_MIN_OUTPUT_TOKENS = 8192
+_PROPOSER_MIN_OUTPUT_TOKENS = 4096
 
 
 def _future(seconds: float) -> str:

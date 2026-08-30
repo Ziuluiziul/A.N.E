@@ -1,0 +1,27 @@
+Security source excerpts (line numbers at main@61f2da4 + opening working diff)
+
+backend/src/vault/control/models.py:136-143
+  class CredentialBody(Frozen):
+      key: str = Field(min_length=1, max_length=512, repr=False)
+
+backend/src/vault/control/routes.py:153-178
+  A candidate key is placed only in a cloned Settings used to build the disposable
+  adapter. Provider exceptions are sanitized through the original Settings object.
+
+backend/src/vault/control/routes.py:196-208
+  PUT receives CredentialBody directly; overlength validation therefore occurs before
+  put_credential executes. CredentialError is redacted using configured Settings.
+
+backend/src/vault/config.py:25-27
+  SECRET_SHAPE recognizes AIza, gsk_ and nvapi- shaped values; it is not a generic
+  candidate-value scrubber.
+
+backend/src/vault/config.py:103-126
+  Settings.redact replaces only secrets present on that Settings instance, their URL
+  encodings, and SECRET_SHAPE matches.
+
+FastAPI exception handler in the installed environment
+  request_validation_exception_handler serializes exc.errors(); Pydantic error entries
+  include the rejected input unless an application handler removes it.
+
+No value from any credential test is included in this file.

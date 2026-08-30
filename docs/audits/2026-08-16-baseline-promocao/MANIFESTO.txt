@@ -1,0 +1,22 @@
+MANIFESTO — baseline de promoção
+gerado em: 2026-08-16T00:00:00Z
+HEAD auditado: (ver git log)
+propósito: registrar o estado pré-ativação do caminho quórum → promoção,
+para que a coorte de fechamentos anteriores à ativação sirva de benchmark
+e os números daqui sejam comparáveis depois que o Promoter entrar no loop.
+
+MÉTODO
+- Ledger de desfechos: runtime/state/outcomes.jsonl (contagem por OutcomeClass).
+- Fila autônoma: runtime/state/autonomy/tasks.json (estados e motivos de rejeição).
+- Cotas e endpoints: runtime/state/quotas.json, runtime/state/endpoints.json.
+- Commits no corpus desde a migração 2026-07-28: evidencia/commits-do-corpus.txt
+  (git log --oneline --since=2026-07-28 -- knowledge/).
+- O caminho quórum → Promoter não estava ligado: nenhuma chamada a
+  vault.promotion.promoter fora de testes; runtime/proposals/ vazio.
+
+ARQUIVO                                             BYTES
+evidencia/outcomes.jsonl                                (ledger bruto)
+evidencia/tasks.json                                    (fila autônoma)
+evidencia/quotas.json                                   (cotas)
+evidencia/endpoints.json                                (descoberta)
+evidencia/commits-do-corpus.txt                         (histórico do corpus)

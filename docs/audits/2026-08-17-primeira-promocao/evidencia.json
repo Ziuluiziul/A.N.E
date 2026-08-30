@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "capturado_em": "2026-08-17T05:31:29.410822+00:00",
+  "panel_id": "5911b74e215e",
+  "task_id": "aut-53cb6f4a68c38ddf3502",
+  "proposal_id": "9954f1f09755",
+  "quorum_id": "5911b74e215e",
+  "decision_id": "c3349f4c1d59",
+  "policy_version": "quorum-v1",
+  "authorization_timestamp": "2026-08-17T04:35:25+00:00",
+  "patch_digest": "21dfb771843af85f5bf805a50464bf426328c0d15d52b6465263955b1d71c596",
+  "targets_fingerprint": "b03f95f88a9911e67af290fc0685f70c",
+  "targets": [
+    "Cognição/Bases Neurais da Cognição.md"
+  ],
+  "promotion_state_transitions": [
+    {
+      "state": "eligible",
+      "at": "2026-08-17T04:35:25+00:00",
+      "detail": "autorizado pelo quórum"
+    },
+    {
+      "state": "promotion_pending",
+      "at": "2026-08-17T04:35:25+00:00",
+      "detail": "reivindicado para aplicação"
+    },
+    {
+      "state": "applying",
+      "at": "2026-08-17T04:35:25+00:00",
+      "detail": "promoter em andamento"
+    },
+    {
+      "state": "promoted",
+      "at": "2026-08-17T04:36:23+00:00",
+      "detail": "promoção aplicada e commitada"
+    }
+  ],
+  "commit_sha": "0d77a1ad4b2b2e93a17cecdeed7fb53a74ac926c",
+  "commit_message": "Promove proposta 9954f1f09755 por quórum multimodelo",
+  "knowledge_entity_changed": [
+    "Cognição/Bases Neurais da Cognição.md"
+  ],
+  "post_commit_audit": {
+    "ok": true,
+    "saida": "notas markdown ................. 84\nnomes de nota duplicados ....... 0\ndocumentos na raiz ............. 2\nwikilinks ...................... 672\nwikilinks quebrados ............ 0\nwikilinks sem relation: ........ 0\nrelation: fora do vocabulário .. 0\nnotas órfãs .................... 0\nMOCs sem links ................. 0\nfrontmatter ausente/inválido ... 0\nlinhas definidoras de claims ... 267\nclaims inválidos ............... 0\nIDs de claim únicos ............ 267\nIDs de claim duplicados ........ 0 \nreview_after vencidos ........... 0\n\nSHA-256 do manifesto ........... 8eafbf255b9d9165d3c098c6e35101f05712c259aeef54f410bbb5cf898a8579\n\nESTRUTURA APROVADA — nenhuma das categorias estruturais implementadas acusou defeito.\nFONTES EXTERNAS NÃO VERIFICADAS — nenhuma resolução DOI/arXiv/ISBN ou conferência de título foi executada."
+  },
+  "reprojection": {
+    "corpus_fingerprint": "8eafbf255b9d9165d3c098c6e35101f05712c259aeef54f410bbb5cf898a8579",
+    "generated_at": "2026-08-17T05:31:30+00:00"
+  },
+  "decisao": {
+    "outcome": "promote",
+    "status": "decided",
+    "valid_vote_count": 3,
+    "provider_count": 2,
+    "decided_at": "2026-08-17T04:35:25+00:00"
+  }
+}

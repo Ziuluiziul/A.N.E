@@ -44,7 +44,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--max-tokens",
         type=int,
-        default=8192,
+        default=4096,
         help="teto de saída da proposta; votos têm schema e teto próprio",
     )
     parser.add_argument(

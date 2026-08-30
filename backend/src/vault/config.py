@@ -1,13 +1,8 @@
-"""Configuração do A.N.E. (Atlas Neural-Epistêmico).
+"""Configuração do projeto.
 
-As chaves vêm de ~/.config/ane/secrets.env quando esse arquivo existe; caso
-contrário, o caminho legado ~/.config/vault-autodidata/secrets.env continua
-aceito. Os dois ficam fora do repositório. O ambiente do processo tem
-precedência, o que permite sobrepor um valor numa chamada isolada sem editar
-o arquivo.
-
-Campos operacionais aceitam `VAULT_*` e `ANE_*` como aliases. Não remova
-`VAULT_*`: é o contrato das instalações existentes.
+As chaves vêm de ~/.config/vault-autodidata/secrets.env, fora do repositório. O
+ambiente do processo tem precedência, o que permite sobrepor um valor numa chamada
+isolada sem editar o arquivo.
 
 As chaves são `SecretStr`, então `repr` e `model_dump_json` mostram `**********` em
 vez do valor — um log ou um traceback não vaza credencial por acidente.
@@ -22,13 +17,11 @@ from functools import lru_cache
 from pathlib import Path
 from urllib.parse import quote
 
-from pydantic import AliasChoices, Field, SecretStr, field_validator
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-ANE_SECRETS_FILE = Path.home() / ".config" / "ane" / "secrets.env"
-LEGACY_SECRETS_FILE = Path.home() / ".config" / "vault-autodidata" / "secrets.env"
-SECRETS_FILE = ANE_SECRETS_FILE if ANE_SECRETS_FILE.is_file() else LEGACY_SECRETS_FILE
+SECRETS_FILE = Path.home() / ".config" / "vault-autodidata" / "secrets.env"
 SECRET_SHAPE = re.compile(
     r"AIza[0-9A-Za-z_\-]{20,}|gsk_[0-9A-Za-z]{20,}|nvapi-[0-9A-Za-z_\-]{20,}"
     r"|sk-or-v1-[0-9A-Za-z_\-]{20,}"
@@ -68,39 +61,30 @@ class Settings(BaseSettings):
     # temporário; sem isso, testar a gravação exigiria escrever no arquivo real.
     secrets_file: Path = Field(
         default=SECRETS_FILE,
-        validation_alias=AliasChoices("VAULT_SECRETS_FILE", "ANE_SECRETS_FILE"),
+        validation_alias="VAULT_SECRETS_FILE",
     )
 
     corpus_dir: Path = Field(
         default=REPO_ROOT / "knowledge",
-        validation_alias=AliasChoices("VAULT_CORPUS_DIR", "ANE_CORPUS_DIR"),
+        validation_alias="VAULT_CORPUS_DIR",
     )
     runtime_dir: Path = Field(
         default=REPO_ROOT / "runtime",
-        validation_alias=AliasChoices("VAULT_RUNTIME_DIR", "ANE_RUNTIME_DIR"),
+        validation_alias="VAULT_RUNTIME_DIR",
     )
 
     # Camada operacional sintética. Só nasce de pedido explícito: nunca é consequência
     # de o corpus falhar, e a projeção sempre declara que a origem é demonstração.
-    demo_operational: bool = Field(
-        default=False,
-        validation_alias=AliasChoices("VAULT_DEMO_OPERATIONAL", "ANE_DEMO_OPERATIONAL"),
-    )
+    demo_operational: bool = Field(default=False, validation_alias="VAULT_DEMO_OPERATIONAL")
 
     # Teto de chamadas externas por execução do orquestrador. É o limite que não
     # depende de header nenhum, e o único que o mantenedor controla diretamente.
     # Passar dele exige decisão humana, não ajuste de código.
-    work_max_calls: int = Field(
-        default=6,
-        validation_alias=AliasChoices("VAULT_WORK_MAX_CALLS", "ANE_WORK_MAX_CALLS"),
-    )
+    work_max_calls: int = Field(default=6, validation_alias="VAULT_WORK_MAX_CALLS")
 
     # Tarefas autônomas simultâneas por processo. Cada quórum consome ~4 chamadas;
     # o teto efetivo continua sendo work_max_calls.
-    worker_concurrency: int = Field(
-        default=3,
-        validation_alias=AliasChoices("VAULT_WORKER_CONCURRENCY", "ANE_WORKER_CONCURRENCY"),
-    )
+    worker_concurrency: int = Field(default=3, validation_alias="VAULT_WORKER_CONCURRENCY")
 
     # Chamadas simultâneas por provedor dentro deste processo. O mapa é o piso;
     # o worker sobe até o RPM documentado. Zero desativa novas alocações sem
@@ -108,9 +92,7 @@ class Settings(BaseSettings):
     # em voo (A.N.E); 64 matava a morfologia.
     provider_concurrency: dict[str, int] = Field(
         default_factory=dict,
-        validation_alias=AliasChoices(
-            "VAULT_PROVIDER_CONCURRENCY", "ANE_PROVIDER_CONCURRENCY"
-        ),
+        validation_alias="VAULT_PROVIDER_CONCURRENCY",
     )
 
     @field_validator("provider_concurrency", mode="before")

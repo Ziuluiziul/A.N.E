@@ -123,6 +123,11 @@ class FakeAdapter:
         patch_path: str = "Teste.md",
         empty_endpoints: set[str] | None = None,
         spent_invalid: list[str] | None = None,
+        patch_suffix: str = "",
+        truncate_patch: bool = False,
+        output_tokens: list[int] | None = None,
+        think_only_endpoints: set[str] | None = None,
+        extra_field: bool = False,
     ) -> None:
         self.provider = provider
         self.calls = calls
@@ -133,6 +138,11 @@ class FakeAdapter:
         self.patch_path = patch_path
         self.empty_endpoints = set(empty_endpoints or [])
         self.spent_invalid = spent_invalid if spent_invalid is not None else []
+        self.patch_suffix = patch_suffix
+        self.truncate_patch = truncate_patch
+        self.output_tokens = output_tokens if output_tokens is not None else []
+        self.think_only_endpoints = set(think_only_endpoints or [])
+        self.extra_field = extra_field
 
     async def generate(
         self,
@@ -142,12 +152,20 @@ class FakeAdapter:
         max_output_tokens: int = 256,
     ) -> GenerationResult:
         self.calls.append((self.provider, endpoint_id, prompt))
+        self.output_tokens.append(max_output_tokens)
         if endpoint_id in self.empty_endpoints:
             return GenerationResult(
                 provider=self.provider,
                 endpoint_id=endpoint_id,
                 text="",
                 usage={"total_tokens": 1},
+            )
+        if endpoint_id in self.think_only_endpoints:
+            return GenerationResult(
+                provider=self.provider,
+                endpoint_id=endpoint_id,
+                text=f"<think>{SECRET_REASONING}</think>",
+                usage={"total_tokens": 8},
             )
         return GenerationResult(
             provider=self.provider,
@@ -168,6 +186,7 @@ class FakeAdapter:
         mais. O texto emitido é idêntico ao de `generate`: mesmo delta de conteúdo e o
         consumo real no `FINAL`, como os adaptadores concretos fazem."""
         self.calls.append((self.provider, endpoint_id, prompt))
+        self.output_tokens.append(max_output_tokens)
         if endpoint_id in self.empty_endpoints:
             yield CognitiveEvent(
                 provider=self.provider,
@@ -178,7 +197,10 @@ class FakeAdapter:
                 detail={"usage": {"total_tokens": 1}},
             )
             return
-        texto = self._texto(prompt)
+        if endpoint_id in self.think_only_endpoints:
+            texto = f"<think>{SECRET_REASONING}</think>"
+        else:
+            texto = self._texto(prompt)
         sequencia = 0
         if texto:
             sequencia += 1
@@ -204,24 +226,31 @@ class FakeAdapter:
         role = self._role(prompt)
         if role == "proponente":
             if "proposal_id exato:" in prompt:
+                repairing = "Resposta a reparar:" in prompt
                 if self.invalid_patch:
                     return '{"operations":[]}'
                 proposal_id = re.search(r"proposal_id exato: ([0-9a-f]+)", prompt)
                 base_commit = re.search(r"base_commit exato: ([0-9a-f]+)", prompt)
                 assert proposal_id is not None and base_commit is not None
-                return json.dumps(
-                    {
-                        "proposal_id": proposal_id.group(1),
-                        "base_commit": base_commit.group(1),
-                        "operations": [
-                            {
-                                "action": "create",
-                                "path": self.patch_path,
-                                "content": "# Teste\n\nConteúdo integral.",
-                            }
-                        ],
-                    }
-                )
+                corpo = {
+                    "proposal_id": proposal_id.group(1),
+                    "base_commit": base_commit.group(1),
+                    "operations": [
+                        {
+                            "action": "create",
+                            "path": self.patch_path,
+                            "content": "# Teste\n\nConteúdo integral.",
+                        }
+                    ],
+                }
+                if self.extra_field:
+                    corpo["campo_extra"] = True
+                payload = json.dumps(corpo)
+                if repairing:
+                    return payload
+                if self.truncate_patch:
+                    return payload[: max(len(payload) // 2, 8)]
+                return payload + self.patch_suffix
             return f"<think>{SECRET_REASONING}</think>Proposta final verificável."
         if role == self.invalid_role and role not in self.spent_invalid:
             self.spent_invalid.append(role)
@@ -299,9 +328,14 @@ def build_orchestrator(
     max_calls: int = 6,
     patch_path: str = "Teste.md",
     empty_endpoints: set[str] | None = None,
+    patch_suffix: str = "",
+    truncate_patch: bool = False,
+    think_only_endpoints: set[str] | None = None,
+    extra_field: bool = False,
 ) -> tuple[QuorumOrchestrator, list[tuple[str, str, str]], QuorumStore]:
     calls: list[tuple[str, str, str]] = []
     spent_invalid: list[str] = []
+    output_tokens: list[int] = []
     adapters = {
         provider: cast(
             ProviderAdapter,
@@ -315,6 +349,11 @@ def build_orchestrator(
                 patch_path=patch_path,
                 empty_endpoints=empty_endpoints,
                 spent_invalid=spent_invalid,
+                patch_suffix=patch_suffix,
+                truncate_patch=truncate_patch,
+                output_tokens=output_tokens,
+                think_only_endpoints=think_only_endpoints,
+                extra_field=extra_field,
             ),
         )
         for provider in {entry[0] for entry in entries}
@@ -460,18 +499,18 @@ def test_aptidao_reordena_o_trio_de_revisores_sem_afrouxar_diversidade(
     tarefas = _tarefas_de_revisao()
 
     sem_pistas, refusal = orchestrator._plan_distinct(  # noqa: SLF001
-        tarefas, orchestrator._callable_profiles()  # noqa: SLF001
+        tarefas,
+        orchestrator._callable_profiles(),  # noqa: SLF001
     )
     assert sem_pistas is not None, refusal
     assert all(assignment.endpoint_id != "estrela-1" for assignment in sem_pistas)
 
     orchestrator.capacity_hints = lambda: CapacityHints(
-        aptitude={
-            ("vote", estrela, papel, "Física"): 1.0 for papel in PANEL_ROLES
-        }
+        aptitude={("vote", estrela, papel, "Física"): 1.0 for papel in PANEL_ROLES}
     )
     com_pistas, refusal = orchestrator._plan_distinct(  # noqa: SLF001
-        tarefas, orchestrator._callable_profiles()  # noqa: SLF001
+        tarefas,
+        orchestrator._callable_profiles(),  # noqa: SLF001
     )
     assert com_pistas is not None, refusal
     escolhidos = [assignment.endpoint_id for assignment in com_pistas]
@@ -506,7 +545,8 @@ def test_unfit_de_voto_nao_vence_aptidao_mas_entra_se_a_diversidade_pedir(
         unfit_por_estagio={"vote": frozenset({estrela})},
     )
     sem_estrela, refusal = orchestrator._plan_distinct(  # noqa: SLF001
-        tarefas, orchestrator._callable_profiles()  # noqa: SLF001
+        tarefas,
+        orchestrator._callable_profiles(),  # noqa: SLF001
     )
     assert sem_estrela is not None, refusal
     assert all(assignment.endpoint_id != "estrela-1" for assignment in sem_estrela)
@@ -515,7 +555,8 @@ def test_unfit_de_voto_nao_vence_aptidao_mas_entra_se_a_diversidade_pedir(
         unfit_por_estagio={"vote": frozenset(nvidia)},
     )
     com_nvidia, refusal = orchestrator._plan_distinct(  # noqa: SLF001
-        tarefas, orchestrator._callable_profiles()  # noqa: SLF001
+        tarefas,
+        orchestrator._callable_profiles(),  # noqa: SLF001
     )
     assert com_nvidia is not None, refusal
     assert any(assignment.provider == "nvidia" for assignment in com_nvidia)
@@ -683,6 +724,7 @@ async def test_ciclo_de_quorum_emite_eventos_fechados_sem_resposta_livre(
 
 
 async def test_patch_malformado_encerra_sem_retry_nem_painel(tmp_path: Path) -> None:
+    """Envelope irrecuperável (schema) aborta sem reparo e sem rotacionar."""
     orchestrator, calls, store = build_orchestrator(
         tmp_path,
         votes={
@@ -699,6 +741,104 @@ async def test_patch_malformado_encerra_sem_retry_nem_painel(tmp_path: Path) -> 
 
     assert len(calls) == 1
     assert store.list_panels() == []
+
+
+async def test_envelope_vazio_apos_think_passa_ao_proximo_proponente(tmp_path: Path) -> None:
+    """HTTP 200 só com think não repara o mesmo endpoint: o lote segue no próximo."""
+    orchestrator, calls, store = build_orchestrator(
+        tmp_path,
+        votes={
+            "verificador-factual": "approve",
+            "critico-epistemologico": "approve",
+            "revisor-estrutural": "approve",
+            "arbitro": "approve",
+        },
+        max_calls=8,
+    )
+    primeiro, refusal = orchestrator._select_proposer(  # noqa: SLF001
+        patch_task(),
+        orchestrator._callable_profiles(),  # noqa: SLF001
+    )
+    assert primeiro is not None, refusal
+    adapter = orchestrator.adapters[primeiro.provider]
+    adapter.think_only_endpoints.add(primeiro.endpoint_id)  # type: ignore[attr-defined]
+
+    panel = await orchestrator.run(patch_task())
+
+    assert panel.decision is not None
+    assert [item.id for item in store.list_panels()] == [panel.id]
+    proposer_calls = [
+        (provider, endpoint, prompt)
+        for provider, endpoint, prompt in calls
+        if "proposal_id exato:" in prompt
+    ]
+    assert len(proposer_calls) == 2
+    assert proposer_calls[0][:2] == (primeiro.provider, primeiro.endpoint_id)
+    assert proposer_calls[1][0] != primeiro.provider
+    assert all("Resposta a reparar:" not in prompt for _, _, prompt in proposer_calls)
+    assert panel.proposal.proposer.provider != primeiro.provider
+
+
+async def test_campo_extra_nao_rotaciona_proponente(tmp_path: Path) -> None:
+    orchestrator, calls, store = build_orchestrator(
+        tmp_path,
+        votes={
+            "verificador-factual": "approve",
+            "critico-epistemologico": "approve",
+            "revisor-estrutural": "approve",
+            "arbitro": "approve",
+        },
+        extra_field=True,
+    )
+
+    with pytest.raises(InvalidProposalEnvelope, match="patch inválido"):
+        await orchestrator.run(patch_task())
+
+    assert len(calls) == 1
+    assert store.list_panels() == []
+
+
+async def test_prosa_trailing_no_envelope_nao_dispara_reparo(tmp_path: Path) -> None:
+    orchestrator, calls, store = build_orchestrator(
+        tmp_path,
+        votes={
+            "verificador-factual": "approve",
+            "critico-epistemologico": "approve",
+            "revisor-estrutural": "approve",
+            "arbitro": "approve",
+        },
+        patch_suffix="\n\nAqui a ata do painel e um $$ LaTeX.",
+    )
+
+    panel = await orchestrator.run(patch_task())
+
+    assert panel.decision is not None
+    assert len(calls) == 4
+    assert all("Resposta a reparar:" not in prompt for _, _, prompt in calls)
+    assert [item.id for item in store.list_panels()] == [panel.id]
+
+
+async def test_json_truncado_repara_uma_vez_sem_subir_tokens(tmp_path: Path) -> None:
+    orchestrator, calls, store = build_orchestrator(
+        tmp_path,
+        votes={
+            "verificador-factual": "approve",
+            "critico-epistemologico": "approve",
+            "revisor-estrutural": "approve",
+            "arbitro": "approve",
+        },
+        truncate_patch=True,
+    )
+    task = patch_task()
+    panel = await orchestrator.run(task)
+
+    assert panel.decision is not None
+    assert [item.id for item in store.list_panels()] == [panel.id]
+    proposer_calls = [prompt for _, _, prompt in calls if "proposal_id exato:" in prompt]
+    assert len(proposer_calls) == 2
+    assert "Resposta a reparar:" in proposer_calls[1]
+    tetos = next(iter(orchestrator.adapters.values())).output_tokens  # type: ignore[attr-defined]
+    assert tetos[:2] == [task.max_output_tokens, task.max_output_tokens]
 
 
 async def test_tarefa_autonoma_nao_pode_criar_nota(tmp_path: Path) -> None:
@@ -1149,13 +1289,10 @@ async def test_proponente_com_429_troca_de_provedor(tmp_path: Path) -> None:
     orchestrator, calls, store = build_orchestrator(
         tmp_path,
         votes={"verificador-factual": "approve"},
-        entries=ENDPOINTS
-        + (("nous", "zeta-1", "zeta"), ("nous", "eta-1", "eta")),
+        entries=ENDPOINTS + (("nous", "zeta-1", "zeta"), ("nous", "eta-1", "eta")),
     )
     limited: list[tuple[str, str]] = []
-    orchestrator.adapters["groq"] = cast(
-        ProviderAdapter, _RateLimitedAdapter("groq", limited)
-    )
+    orchestrator.adapters["groq"] = cast(ProviderAdapter, _RateLimitedAdapter("groq", limited))
 
     panel = await orchestrator.run(quorum_task())
 
@@ -1208,4 +1345,3 @@ def test_inventario_habilitado_omite_provedor_suspenso(tmp_path: Path) -> None:
 
     assert "groq" not in remaining
     assert "nvidia" in remaining
-

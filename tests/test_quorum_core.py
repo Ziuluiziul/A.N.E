@@ -24,6 +24,7 @@ from vault.quorum import (
     canonical_patch_response,
     corpus_patch_prompt,
     decide_panel,
+    envelope_needs_repair,
     parse_corpus_patch,
     parse_vote,
     resolve_with_synthesis,
@@ -169,7 +170,7 @@ def test_prompt_de_voto_deriva_schema_e_mapeamento_literal() -> None:
     assert '"required"' in contract
 
 
-def test_envelope_de_patch_e_fechado_canonico_e_sem_reparo() -> None:
+def test_envelope_de_patch_e_fechado_canonico_com_extracao() -> None:
     proposal_id = "prop-patch"
     base = "a" * 40
     raw = json.dumps(
@@ -199,17 +200,27 @@ def test_envelope_de_patch_e_fechado_canonico_e_sem_reparo() -> None:
     assert f"proposal_id exato: {proposal_id}" in prompt
     assert f"base_commit exato: {base}" in prompt
 
-    for malformed in (
+    trailing = parse_corpus_patch(
         raw + " explicação",
+        expected_proposal_id=proposal_id,
+        expected_base_commit=base,
+    )
+    assert trailing.patch.targets == ["Teste.md"]
+    assert "explicação" not in trailing.patch.operations[0].content
+
+    comma = parse_corpus_patch(
         raw.rsplit("}", 1)[0] + ",}",
-        json.dumps({**json.loads(raw), "campo_extra": True}),
-    ):
-        with pytest.raises(ProposalEnvelopeError, match="CorpusPatch"):
-            parse_corpus_patch(
-                malformed,
-                expected_proposal_id=proposal_id,
-                expected_base_commit=base,
-            )
+        expected_proposal_id=proposal_id,
+        expected_base_commit=base,
+    )
+    assert comma.patch.targets == ["Teste.md"]
+
+    with pytest.raises(ProposalEnvelopeError, match="CorpusPatch"):
+        parse_corpus_patch(
+            json.dumps({**json.loads(raw), "campo_extra": True}),
+            expected_proposal_id=proposal_id,
+            expected_base_commit=base,
+        )
 
 
 def test_newline_cru_dentro_de_content_e_aceito() -> None:
@@ -249,7 +260,8 @@ def test_fence_de_duas_linhas_sem_fecho_e_aceito() -> None:
     assert parsed.patch.targets == ["Teste.md"]
 
 
-def test_prosa_com_stub_json_nao_e_colhida() -> None:
+def test_prosa_com_stub_json_e_colhida() -> None:
+    """Prosa ao redor não entra no content; o objeto único continua válido."""
     proposal_id = "prop-stub"
     base = "a" * 40
     stub = json.dumps(
@@ -265,12 +277,14 @@ def test_prosa_com_stub_json_nao_e_colhida() -> None:
             ],
         }
     )
-    with pytest.raises(ProposalEnvelopeError):
-        parse_corpus_patch(
-            f"Aqui vai o patch:\n{stub}",
-            expected_proposal_id=proposal_id,
-            expected_base_commit=base,
-        )
+    parsed = parse_corpus_patch(
+        f"Aqui vai o patch:\n{stub}\nPronto.",
+        expected_proposal_id=proposal_id,
+        expected_base_commit=base,
+    )
+    assert parsed.patch.operations[0].content == "...full markdown..."
+    assert "Aqui vai" not in parsed.patch.operations[0].content
+    assert "Pronto" not in parsed.patch.operations[0].content
 
 
 def test_store_persiste_exatamente_o_patch_mostrado_aos_revisores(tmp_path: Path) -> None:
@@ -661,7 +675,7 @@ def test_dois_patches_dentro_do_think_nao_sao_desempatados() -> None:
         operations=[PatchOperation(action="create", path="Outro.md", content="# Outro\n\nY.")],
     )
     bruto = f"<think>{json.dumps(um.to_dict())} ou {json.dumps(outro.to_dict())}</think>"
-    with pytest.raises(ProposalEnvelopeError, match="não obedece ao CorpusPatch"):
+    with pytest.raises(ProposalEnvelopeError, match="ambíguo"):
         parse_corpus_patch(
             bruto,
             expected_proposal_id="abc123",
@@ -687,3 +701,107 @@ def test_prompt_sem_escopo_declarado_nao_inventa_restricao() -> None:
     prompt = corpus_patch_prompt("Crie a nota", proposal_id="p1", base_commit="c" * 40)
     assert "autorizado" not in prompt
     assert "não autoriza criar nota" not in prompt
+
+
+def _patch_json(proposal_id: str, base: str, content: str = "# Nota\n\nTexto.") -> str:
+    return json.dumps(
+        {
+            "proposal_id": proposal_id,
+            "base_commit": base,
+            "operations": [{"action": "create", "path": "Nota.md", "content": content}],
+        }
+    )
+
+
+def test_json_truncado_sem_fechar_objeto_falha() -> None:
+    proposal_id = "prop-trunc"
+    base = "c" * 40
+    bruto = _patch_json(proposal_id, base)[:-12]
+    with pytest.raises(ProposalEnvelopeError, match="truncad"):
+        parse_corpus_patch(
+            bruto,
+            expected_proposal_id=proposal_id,
+            expected_base_commit=base,
+        )
+
+
+def test_fence_markdown_com_prosa_depois_e_lida() -> None:
+    proposal_id = "prop-fence-prosa"
+    base = "c" * 40
+    raw = _patch_json(proposal_id, base, "# Nota\n\nCorpo.")
+    parsed = parse_corpus_patch(
+        f"Segue o patch:\n```JSON\n{raw}\n```\nEspero que sirva.",
+        expected_proposal_id=proposal_id,
+        expected_base_commit=base,
+    )
+    assert parsed.patch.targets == ["Nota.md"]
+    assert parsed.patch.operations[0].content == "# Nota\n\nCorpo."
+    assert "Espero" not in parsed.patch.operations[0].content
+
+
+def test_ata_e_prosa_ao_redor_nao_poluem_o_content() -> None:
+    proposal_id = "prop-ata"
+    base = "c" * 40
+    raw = _patch_json(proposal_id, base, "# Nota\n\nSomente o corpus.")
+    envelopado = (
+        "# Decisão do painel\n\n"
+        f"{raw}\n\n"
+        "# Painel abcdef012345\n"
+        r"comando $\operatorname x$ mutilado"
+    )
+    parsed = parse_corpus_patch(
+        envelopado,
+        expected_proposal_id=proposal_id,
+        expected_base_commit=base,
+    )
+    content = parsed.patch.operations[0].content
+    assert content == "# Nota\n\nSomente o corpus."
+    assert "Decisão do painel" not in content
+    assert "abcdef012345" not in content
+    assert "operatorname" not in content
+
+
+def test_fence_mutilado_ainda_entrega_o_objeto() -> None:
+    proposal_id = "prop-fence-quebrado"
+    base = "c" * 40
+    raw = _patch_json(proposal_id, base)
+    parsed = parse_corpus_patch(
+        f"```json\n{raw}\n`` extra",
+        expected_proposal_id=proposal_id,
+        expected_base_commit=base,
+    )
+    assert parsed.patch.targets == ["Nota.md"]
+
+
+def test_reparo_so_para_envelope_incompleto() -> None:
+    assert envelope_needs_repair(
+        ProposalEnvelopeError("resposta do proponente truncada não obedece ao CorpusPatch")
+    )
+    assert envelope_needs_repair(ProposalEnvelopeError("unexpected end of data"))
+    assert not envelope_needs_repair(
+        ProposalEnvelopeError("2 objetos válidos na mesma resposta: patch ambíguo")
+    )
+    assert not envelope_needs_repair(
+        ProposalEnvelopeError("proposal_id do patch diverge do identificador atribuído")
+    )
+
+
+def test_dois_objetos_validos_na_mesma_resposta_sao_ambiguos() -> None:
+    proposal_id = "prop-amb"
+    base = "c" * 40
+    um = _patch_json(proposal_id, base, "# Um\n\nX.")
+    outro = json.dumps(
+        {
+            "proposal_id": proposal_id,
+            "base_commit": base,
+            "operations": [
+                {"action": "create", "path": "Outra.md", "content": "# Outra\n\nY."}
+            ],
+        }
+    )
+    with pytest.raises(ProposalEnvelopeError, match="ambíguo"):
+        parse_corpus_patch(
+            f"{um}\n{outro}",
+            expected_proposal_id=proposal_id,
+            expected_base_commit=base,
+        )

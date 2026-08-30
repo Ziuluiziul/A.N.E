@@ -1,0 +1,31 @@
+{
+  "descricao": "Contagem de relações em cada camada, do corpus ao segmento desenhado.",
+  "head": "1457d93900e609e5b5ef43066924dd3e1b8c1059",
+  "camadas": {
+    "corpus_grafo_nos": 84,
+    "corpus_grafo_arestas_dirigidas": 555,
+    "corpus_wikilinks_soma_pesos": 672,
+    "projecao_nos_total": 362,
+    "projecao_nos_epistemicos": 84,
+    "projecao_nos_operacionais": 278,
+    "projecao_arestas_total": 941,
+    "arestas_canonicas": 555,
+    "arestas_agregadas": 75,
+    "arestas_operacionais": 311
+  },
+  "duplicacao": {
+    "chave_canonica": "source|primaryRelation|target (dirigida)",
+    "chaves_dirigidas_distintas": 555,
+    "chaves_com_repeticao": 0,
+    "veredicto_dados": "sem duplicata no corpus, no parser ou no snapshot",
+    "pares_reciprocos_mesmo_caminho": 129,
+    "pares_reciprocos_mesma_familia": 80,
+    "pares_reciprocos_familia_diferente": 49,
+    "segmentos_sobre_caminho_ja_ocupado": 129,
+    "agregadas_pares_distintos": 52,
+    "agregadas_pares_com_dois_tubos": 23,
+    "agregadas_pares_com_relacao_contraditoria": 10,
+    "espinha_arestas_desenhadas": 223,
+    "espinha_sobreposta_a_familias_se_ambas_visiveis": 223
+  }
+}

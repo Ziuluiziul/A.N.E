@@ -1,0 +1,57 @@
+{
+  "baseline": {
+    "branch": "main",
+    "head": "61f2da448b234bde0318237965ac954c2c591c17",
+    "commits": 94,
+    "remote_count": 0,
+    "opening_modified": 6,
+    "opening_untracked": 1
+  },
+  "corpus": {
+    "notes": 84,
+    "wikilinks": 672,
+    "claims": 267,
+    "canonical_edges": 555,
+    "aggregated_edges": 52,
+    "fingerprint": "e48f47915db6524005241f182cfe98a8bf108c7f6d33d47743061510193da2b3"
+  },
+  "tests": {
+    "python_passed": 392,
+    "typescript_passed": 302,
+    "typescript_test_files": 18
+  },
+  "runtime": {
+    "panels": 39,
+    "members": 117,
+    "votes": 115,
+    "decisions": 37,
+    "outcomes": {"escalate": 23, "reject": 11, "promote": 3},
+    "patches": 9,
+    "promotion_files": 0,
+    "schema_invalid_votes": 39,
+    "abstentions": 46,
+    "events": 1166,
+    "call_started": 189,
+    "call_completed": 188
+  },
+  "live_scene": {
+    "viewport_pixels": [1920, 993],
+    "renderer": "ANGLE Vulkan SwiftShader",
+    "projection_nodes": 442,
+    "projection_edges": 1122,
+    "runtime_revision": 1166,
+    "live_nodes": 175,
+    "draw_calls": 361,
+    "triangles": 17143,
+    "inspect_entries": 1314,
+    "visible_entries": 694,
+    "reported_text_slots": 640,
+    "physical_pool_text_objects": 1280,
+    "projection_get_seconds": [0.163783, 0.097686, 0.082078, 0.079690, 0.078389],
+    "approx_software_fps": {"all_with_runtime": 1.1, "without_runtime": 3.2, "corpus_only": 5.3}
+  },
+  "classification": {
+    "alpha": "HOLD",
+    "github": "NOT READY"
+  }
+}

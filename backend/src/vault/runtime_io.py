@@ -55,10 +55,11 @@ def write_private_json(path: Path, payload: Any) -> None:
             os.fsync(stream.fileno())
         os.replace(temporary_path, path)
         os.chmod(path, 0o600)
-        directory = os.open(path.parent, os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC)
-        try:
-            os.fsync(directory)
-        finally:
-            os.close(directory)
+        if os.name != "nt":
+            directory = os.open(path.parent, os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC)
+            try:
+                os.fsync(directory)
+            finally:
+                os.close(directory)
     finally:
         temporary_path.unlink(missing_ok=True)

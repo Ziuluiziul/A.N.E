@@ -1,0 +1,150 @@
+{
+  "descricao": "Métricas de 3.5-B em dois protocolos. A viewport é a mesma nos dois; a câmera é que difere entre protocolos, e por isso eles são reportados separados.",
+  "viewport": {
+    "width": 1600,
+    "height": 900
+  },
+  "protocolos": {
+    "cameraFixa": "posição {\"x\":108.8,\"y\":-220.8,\"z\":204.8}, alvo {\"x\":0,\"y\":-7.4,\"z\":0.9}, fov 38. Idêntica nos dois cenários: mede causalmente o layout.",
+    "autoenquadrada": "pose de cameraPoseForExtent para a extensão de cada cenário: mede o que o usuário recebe."
+  },
+  "antes": {
+    "descricao": "layout de 3.5-A: separação por footprint da esfera antiga",
+    "extentOf": {
+      "radius": 92.31,
+      "depth": 21.57
+    },
+    "cameraFixa": {
+      "entidades": 84,
+      "paresQueSeIntersectam": 124,
+      "areaDeInterseccao_px2": 22827,
+      "areaDeCaixas_px2": 67620,
+      "totalmenteOcluidas": 0,
+      "recortadasPelaBorda": 0,
+      "ocupacaoDoViewport": 0.0341,
+      "parallaxRelativo": {
+        "medianaRelativa_px": 3.33,
+        "dispersao_px": 28.67
+      },
+      "separacaoAngular": {
+        "minima_graus": 3.07,
+        "mediana_graus": 14.82
+      },
+      "intersectionOverBoxArea": 0.3376,
+      "intersectionOverViewportOccupancy": 0.4649
+    },
+    "autoenquadrada": {
+      "entidades": 84,
+      "paresQueSeIntersectam": 118,
+      "areaDeInterseccao_px2": 38522,
+      "areaDeCaixas_px2": 118082,
+      "totalmenteOcluidas": 1,
+      "recortadasPelaBorda": 0,
+      "ocupacaoDoViewport": 0.0601,
+      "parallaxRelativo": {
+        "medianaRelativa_px": 3.52,
+        "dispersao_px": 36.85
+      },
+      "separacaoAngular": {
+        "minima_graus": 4.27,
+        "mediana_graus": 19.13
+      },
+      "intersectionOverBoxArea": 0.3262,
+      "intersectionOverViewportOccupancy": 0.4451
+    },
+    "dispersao": {
+      "varianciaX": 3326.7,
+      "varianciaY": 1872.34,
+      "varianciaZ": 146.37,
+      "autovalores": [
+        3419.39,
+        1783.36,
+        142.66
+      ],
+      "razaoL3L1": 0.04172,
+      "razaoSigma3Sigma1": 0.2043
+    }
+  },
+  "depois": {
+    "descricao": "layout volumétrico de 3.5-B",
+    "extentOf": {
+      "radius": 104.01,
+      "depth": 44.5
+    },
+    "cameraFixa": {
+      "entidades": 84,
+      "paresQueSeIntersectam": 26,
+      "areaDeInterseccao_px2": 4316,
+      "areaDeCaixas_px2": 67509,
+      "totalmenteOcluidas": 0,
+      "recortadasPelaBorda": 0,
+      "ocupacaoDoViewport": 0.0445,
+      "parallaxRelativo": {
+        "medianaRelativa_px": 4.07,
+        "dispersao_px": 28.61
+      },
+      "separacaoAngular": {
+        "minima_graus": 2.86,
+        "mediana_graus": 14.77
+      },
+      "intersectionOverBoxArea": 0.0639,
+      "intersectionOverViewportOccupancy": 0.0674
+    },
+    "autoenquadrada": {
+      "entidades": 84,
+      "paresQueSeIntersectam": 29,
+      "areaDeInterseccao_px2": 6294,
+      "areaDeCaixas_px2": 92213,
+      "totalmenteOcluidas": 0,
+      "recortadasPelaBorda": 0,
+      "ocupacaoDoViewport": 0.0602,
+      "parallaxRelativo": {
+        "medianaRelativa_px": 4.66,
+        "dispersao_px": 33.64
+      },
+      "separacaoAngular": {
+        "minima_graus": 3.34,
+        "mediana_graus": 17.39
+      },
+      "intersectionOverBoxArea": 0.0683,
+      "intersectionOverViewportOccupancy": 0.0726
+    },
+    "dispersao": {
+      "varianciaX": 3425.01,
+      "varianciaY": 2000.07,
+      "varianciaZ": 317.16,
+      "autovalores": [
+        3515.19,
+        1911.57,
+        315.48
+      ],
+      "razaoL3L1": 0.08975,
+      "razaoSigma3Sigma1": 0.2996
+    }
+  },
+  "reducao": {
+    "intersectionOverBoxArea_cameraFixa_pct": 81.1,
+    "intersectionOverBoxArea_autoenquadrada_pct": 79.1,
+    "intersectionOverViewportOccupancy_cameraFixa_pct": 85.5,
+    "intersectionOverViewportOccupancy_autoenquadrada_pct": 83.7,
+    "pares_cameraFixa_pct": 79
+  },
+  "observatorio": {
+    "sistemas": 35,
+    "orfaos": 0,
+    "votosSemAvaliador": 0,
+    "slotsNovos": 35,
+    "slotsReaproveitados": 0
+  },
+  "separacaoAngular": {
+    "veredicto": "regressão pequena, trade-off declarado — não 'sem regressão'",
+    "cameraFixa": {
+      "mediana": "14,82° → 14,77°",
+      "minima": "3,07° → 2,86°"
+    },
+    "autoenquadrada": {
+      "mediana": "19,13° → 17,39°",
+      "minima": "4,27° → 3,34°"
+    }
+  }
+}

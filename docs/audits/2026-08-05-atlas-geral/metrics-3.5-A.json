@@ -1,0 +1,85 @@
+{
+  "descricao": "Métricas de espaço de tela do incremento 3.5-A, medidas na mesma viewport (1600x900) e com a pose de câmera que cada cenário produz para enquadrar o corpus.",
+  "viewport": {
+    "largura": 1600,
+    "altura": 900
+  },
+  "cena": {
+    "nos": 362,
+    "epistemicos": 84,
+    "operacionais": 278
+  },
+  "antes": {
+    "descricao": "camada operacional no mesmo frame do corpus (include: all)",
+    "extentOf": {
+      "radius": 246.82,
+      "depth": 32.54
+    },
+    "tela": {
+      "entidades": 84,
+      "paresDeCaixasQueSeIntersectam": 111,
+      "areaProjetadaDeInterseccao_px2": 4853,
+      "entidadesTotalmenteOcluidas": 1,
+      "entidadesRecortadasPelaBorda": 0,
+      "ocupacaoDoViewportPorCaixasDeNos": 0.0087,
+      "areaDeCaixasDeNos_px2": 12528,
+      "interseccaoRelativaAAreaDeNos": 0.3874
+    },
+    "parallax": {
+      "medianaDeDeslocamento_px": 1.23,
+      "maximoDeDeslocamento_px": 1.37,
+      "dispersao_px": 0.27
+    }
+  },
+  "depois": {
+    "descricao": "frames separados; a visão de corpus mede e enquadra só o corpus",
+    "extentOf": {
+      "radius": 92.31,
+      "depth": 21.57
+    },
+    "observatorio": {
+      "radius": 173.43,
+      "depth": 16.2,
+      "origem": {
+        "x": 355.7479302133744,
+        "y": 0,
+        "z": 0
+      },
+      "sistemas": 35,
+      "orfaos": 0,
+      "votosSemAvaliador": 0
+    },
+    "tela": {
+      "entidades": 84,
+      "paresDeCaixasQueSeIntersectam": 118,
+      "areaProjetadaDeInterseccao_px2": 38522,
+      "entidadesTotalmenteOcluidas": 1,
+      "entidadesRecortadasPelaBorda": 0,
+      "ocupacaoDoViewportPorCaixasDeNos": 0.0601,
+      "areaDeCaixasDeNos_px2": 86544,
+      "interseccaoRelativaAAreaDeNos": 0.4451
+    },
+    "parallax": {
+      "medianaDeDeslocamento_px": 2.19,
+      "maximoDeDeslocamento_px": 2.53,
+      "dispersao_px": 0.69
+    }
+  },
+  "estabilidade": {
+    "deslocamentoMaximoDeMoc": 0,
+    "deslocamentoMaximoDeNota": 0,
+    "observacao": "zero em ambos: acrescentar 278 nós de quórum não move entidade epistêmica alguma"
+  },
+  "leitura": {
+    "melhorou": {
+      "extentOf_da_visao_de_corpus": "246,82 -> 92,31 (a câmera deixa de recuar 2,7x para caber um anexo)",
+      "ocupacao_do_viewport_por_caixas_de_nos": "0.0087 -> 0.0601 (6.9x mais corpus na tela)",
+      "parallax_mediano": "1.23 px -> 2.19 px (+78%)",
+      "deslocamento_de_entidade_epistemica": "0, para qualquer quantidade de nós operacionais"
+    },
+    "nao_melhorou": {
+      "sobreposicao_relativa_dentro_do_corpus": "0.3874 -> 0.4451. A área absoluta de intersecção cresce 7,9x, mas isso é consequência de o corpus estar 6,9x maior na tela; normalizada pela área de nós, a sobreposição piora levemente. 3.5-A separou frames e não tratou oclusão dentro do corpus — isso é 3.5-B (layout volumétrico) e 3.5-C (orçamento de arestas). Registrado como não resolvido em vez de apresentado como ganho."
+    },
+    "metodo": "Caixas de painel projetadas analiticamente com a pose de `cameraPoseForExtent` de cada cenário, contando somente nós — arestas, cascas e ambiente ficam fora, conforme a ressalva do parecer sobre a métrica de pixels não-fundo."
+  }
+}

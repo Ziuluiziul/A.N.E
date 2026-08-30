@@ -5,8 +5,8 @@ domain: física
 kind: nota
 status: active
 epistemic_status: mixed
-updated: 2026-07-16
-verified_at: 2026-07-16
+updated: 2026-07-30
+verified_at: 2026-07-30
 ---
 
 # Colapso objetivo, decoerência e biofísica quântica
@@ -59,6 +59,10 @@ Gassab, Pusuluk e Craddock (2026) usam uma equação mestra de Lindblad para est
 
 Mavromatos, Mershin e Nanopoulos propõem microtúbulos como cavidades QED e substrato de computação quântica, com testes futuros sugeridos. A publicação peer-reviewed não transforma o mecanismo em observação.
 
+## Busca de Evidência para CLM-FIS-QBIO-007
+
+Foi realizada busca sistemática nas fontes citadas neste documento e em bases de literatura disponíveis até julho de 2026, com o objetivo de encontrar evidência que confirme ou delimite a afirmação de que "Redes de triptofano preservam coerência cognitiva funcional por segundos". Nenhuma evidência experimental ou teórica que suporte essa afirmação foi localizada. Assim, o status da claim `CLM-FIS-QBIO-007` permanece `open`.
+
 ## Estado epistêmico
 
 | ID | Afirmação | Status | Fonte e escopo auditável |
@@ -69,7 +73,7 @@ Mavromatos, Mershin e Nanopoulos propõem microtúbulos como cavidades QED e sub
 | `CLM-FIS-QBIO-004` | Orch-OR explica causalmente consciência e ritmos cognitivos. | `speculative` | `HAMEROFF-PENROSE-2014`; mecanismo não demonstrado. |
 | `CLM-FIS-QBIO-005` | O experimento de Babcock et al. mediu aumento de *quantum yield* UV nas arquiteturas estudadas. | `supported` | `BABCOCK-2024`; resultados ópticos do sistema experimental. |
 | `CLM-FIS-QBIO-006` | O mesmo experimento demonstrou diretamente uma taxa radiativa superradiante. | `refuted` | `BABCOCK-2024` declara ausentes as medições de lifetime necessárias para extrair taxa radiativa confiável. |
-| `CLM-FIS-QBIO-007` | Redes de triptofano preservam coerência cognitiva funcional por segundos. | `open` | Não demonstrado pelas fontes experimentais auditadas. |
+| `CLM-FIS-QBIO-007` | Redes de triptofano preservam coerência cognitiva funcional por segundos. | `open` | Nenhuma evidência encontrada nas fontes auditadas. |
 | `CLM-FIS-QBIO-008` | O fluxo de informação quântica de 2026 foi obtido dentro de uma dinâmica de Lindblad para redes modeladas. | `model-dependent` | `GASSAB-2026`; cálculo teórico, não experimento neuronal. |
 
 ## Relações

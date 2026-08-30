@@ -11,7 +11,8 @@ credencial:
 | Onde vive no código | `providers/google/` | `integrations/google_workspace/` |
 
 Confundir as duas é o erro mais comum aqui. A chave do AI Studio não abre o Drive, e o
-token OAuth não fala com o Gemini.
+token OAuth não fala com o Gemini. Host, cotas e o que a página da Gemini API diz hoje
+estão em [PROVEDORES.md](PROVEDORES.md); este guia não mistura OAuth com essa API.
 
 ## Passo a passo
 

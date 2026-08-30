@@ -1,0 +1,133 @@
+{
+  "gerado_em": "2026-08-15T02:44:45+00:00",
+  "head": "30dd91b21fe9",
+  "corpus": {
+    "notas": 84,
+    "linhas": 6691,
+    "wikilinks": 672,
+    "claims": 267,
+    "defeitos_estruturais": 0,
+    "ultimo_commit": "65a4d53 2026-08-04",
+    "status_dos_claims": {
+      "established": 164,
+      "refuted": 33,
+      "supported": 27,
+      "open": 16,
+      "model-dependent": 12,
+      "hypothesis": 6,
+      "speculative": 5,
+      "operational": 3,
+      "out-of-scope": 1
+    },
+    "notas_por_dominio": {
+      "(raiz)": 2,
+      "Ciências da Vida": 4,
+      "Cognição": 5,
+      "Computação": 9,
+      "Dados": 2,
+      "Estatística": 7,
+      "Física": 17,
+      "IA": 10,
+      "Matemática": 16,
+      "Metodologia": 5,
+      "Pontes": 3,
+      "Segurança": 4
+    }
+  },
+  "fila": {
+    "total": 255,
+    "por_estado": {
+      "queued": 114,
+      "completed": 52,
+      "rejected": 48,
+      "retry_wait": 23,
+      "blocked": 17,
+      "running": 1
+    },
+    "por_tipo": {
+      "corpus_review": {
+        "queued": 27,
+        "blocked": 12,
+        "retry_wait": 2,
+        "rejected": 2,
+        "completed": 1,
+        "running": 1
+      },
+      "divergence_review": {
+        "queued": 73,
+        "rejected": 36,
+        "retry_wait": 20,
+        "blocked": 5
+      },
+      "endpoint_diagnosis": {
+        "completed": 47
+      },
+      "proposal_revision": {
+        "queued": 14,
+        "rejected": 10,
+        "completed": 4,
+        "retry_wait": 1
+      }
+    }
+  },
+  "paineis": {
+    "total": 163,
+    "decisoes": {
+      "escalate": 103,
+      "reject": 51,
+      "promote": 5,
+      "revise": 1
+    },
+    "com_patch": 24,
+    "promocoes_efetivas": 0
+  },
+  "endpoints": {
+    "inventariados": 142,
+    "por_status": {
+      "unavailable": 74,
+      "ok": 50,
+      "auth": 14,
+      "error": 4
+    },
+    "por_provedor": {
+      "google": {
+        "ok": 13,
+        "unavailable": 8,
+        "error": 1
+      },
+      "groq": {
+        "ok": 8
+      },
+      "nvidia": {
+        "unavailable": 54,
+        "ok": 21,
+        "error": 3
+      },
+      "ollama": {
+        "unavailable": 12,
+        "ok": 7
+      },
+      "openrouter": {
+        "auth": 14,
+        "ok": 1
+      }
+    }
+  },
+  "cena": {
+    "nos": 1026,
+    "arestas": 2207,
+    "ancoras_na_regua": {
+      "knowledge": 15,
+      "providers": 5,
+      "workers": 7
+    }
+  },
+  "gates": {
+    "auditoria": "aprovada",
+    "pytest": 626,
+    "vitest": 557,
+    "ruff": "limpo",
+    "mypy": "limpo",
+    "eslint": "limpo"
+  }
+}

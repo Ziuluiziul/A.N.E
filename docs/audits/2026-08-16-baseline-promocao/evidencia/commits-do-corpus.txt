@@ -1,0 +1,3 @@
+b2e3d8c Declare o prazo de reconferência nas notas voláteis, como a Política exige.
+65a4d53 Declara as travessias que o corpus já fazia e não tinha onde ler
+f91591a Remove dependências do Obsidian e reorganiza o corpus
