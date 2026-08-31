@@ -441,9 +441,17 @@ class QuorumOrchestrator:
                 detail = result.detail or result.outcome
                 if result.outcome == "rate_limited":
                     self._burn_provider(proposer_assignment.provider)
+                elif result.outcome != "skipped":
+                    self._failed_endpoints.add(proposer_assignment.key)
                 last_unavail = f"proponente {proposer_assignment.key} indisponível: {detail}"
                 continue
             if patch_base is None:
+                if not sanitized.final_response.strip():
+                    self._failed_endpoints.add(proposer_assignment.key)
+                    last_unavail = (
+                        f"proponente {proposer_assignment.key} envelope vazio após raciocínio"
+                    )
+                    continue
                 break
 
             envelope_error: ProposalEnvelopeError | None = None
@@ -504,9 +512,8 @@ class QuorumOrchestrator:
             break
         if result is None or sanitized is None:
             raise QuorumExecutionError("proponente não produziu resposta")
-        # Proposta textual sem nada fora do raciocínio acabou aqui: não há artefato a
-        # recuperar. Quando a tarefa exige patch, quem decide é `parse_corpus_patch`,
-        # que ainda pode achar o objeto fechado dentro do bloco descartado.
+        # Envelope vazio textual já rotacionou o proponente no laço; se ainda
+        # chegou aqui vazio, não há próximo vivo.
         if patch_base is None and not sanitized.final_response.strip():
             raise QuorumExecutionError(
                 f"proponente {proposer_assignment.key} produziu apenas bloco de raciocínio"
@@ -950,7 +957,13 @@ class QuorumOrchestrator:
                 -self._aptidao_para("vote", perfil, dominio),
             ),
         )
-        for grupo in combinations(ordenados, len(tasks)):
+        grupos = list(combinations(ordenados, len(tasks)))
+        grupos.sort(
+            key=lambda grupo: -len(
+                {membro.family for membro in kept} | {perfil.family for perfil in grupo}
+            )
+        )
+        for grupo in grupos:
             membros = [
                 *kept,
                 *(
@@ -965,8 +978,8 @@ class QuorumOrchestrator:
             ]
             if len({membro.provider for membro in membros}) < 2:
                 continue
-            if len({membro.family for membro in membros}) < 2:
-                continue
+            # Família é desempate, não mata o painel: NVIDIA/Google/Nous
+            # sentam se a família Groq estiver vazia.
             for ordem in permutations(grupo):
                 atribuicoes, razao = self._reserve_fixed(tasks, ordem)
                 if atribuicoes is not None:
@@ -1316,7 +1329,7 @@ class QuorumOrchestrator:
         profiles: list[EndpointProfile],
     ) -> tuple[Assignment | None, str]:
         reasons: list[str] = []
-        candidates: list[tuple[tuple[int, float, int, float, int], Assignment]] = []
+        candidates: list[tuple[tuple[int, float, int, float, int, int], Assignment]] = []
         dominio = str(task.context.get("domain") or "")
         for position, candidate in enumerate(profiles):
             reason = self.call_gate.disabled_reason(candidate.provider)
@@ -1361,6 +1374,7 @@ class QuorumOrchestrator:
                             provider_pressure,
                             endpoint_pressure,
                             -self._aptidao_para("proposal", candidate, dominio),
+                            -len({profile.family for profile in remaining}),
                             position,
                         ),
                         replace(assignment, reason=f"{assignment.reason}; {fair_reason}"),
@@ -1382,7 +1396,7 @@ class QuorumOrchestrator:
         if len(profiles) < len(tasks):
             return None, f"há {len(profiles)} endpoint(s) para {len(tasks)} avaliadores"
         if not self._has_panel_diversity(profiles):
-            return None, "avaliadores disponíveis não cobrem 2 provedores e 2 famílias"
+            return None, "avaliadores disponíveis não cobrem 2 provedores"
 
         # M4: aptidão reordena, não exclui. O primeiro trio válido vence; pôr os
         # endpoints de melhor histórico de voto válido na frente faz a busca
@@ -1399,9 +1413,14 @@ class QuorumOrchestrator:
             )
 
         blockers: list[str] = []
-        for group in combinations(profiles, len(tasks)):
-            if not self._has_panel_diversity(group):
-                continue
+        grupos = [
+            group
+            for group in combinations(profiles, len(tasks))
+            if self._has_panel_diversity(group)
+        ]
+        # Família é desempate estável: mais famílias primeiro, aptidão preservada.
+        grupos.sort(key=lambda group: -len({perfil.family for perfil in group}))
+        for group in grupos:
             for ordered in permutations(group):
                 assignments, reason = self._reserve_fixed(tasks, ordered)
                 if assignments is not None:
@@ -1668,10 +1687,10 @@ class QuorumOrchestrator:
 
     @staticmethod
     def _has_panel_diversity(profiles: Sequence[EndpointProfile]) -> bool:
+        # Família diversifica como desempate; dois provedores bastam para o piso.
         return (
             len(profiles) >= len(PANEL_ROLES)
             and len({profile.provider for profile in profiles}) >= 2
-            and len({profile.family for profile in profiles}) >= 2
         )
 
     @staticmethod
@@ -1687,8 +1706,6 @@ class QuorumOrchestrator:
             )
         if len({member.provider for member in members}) < 2:
             raise QuorumExecutionError("painel exige ao menos dois provedores")
-        if len({member.family for member in members}) < 2:
-            raise QuorumExecutionError("painel exige ao menos duas famílias")
 
 
 def _enum_value(value: object) -> str:
@@ -1939,6 +1956,7 @@ async def _call(
 
     text = generated_text.strip()
     if not text:
+        queimados.add(assignment.key)
         return WorkResult(
             assignment=assignment,
             outcome="reachable",

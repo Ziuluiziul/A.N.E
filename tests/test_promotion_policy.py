@@ -46,13 +46,13 @@ def test_diversidade_impossivel_defere(tmp_path: Path) -> None:
     assert decisao is PolicyDecision.DEFER
 
 
-def test_familia_unica_no_acervo_defere_mesmo_com_provedores(tmp_path: Path) -> None:
-    """O piso do painel exige 2 famílias — um acervo monocultivado nunca forma painel."""
+def test_familia_unica_no_acervo_nao_defere_com_provedores(tmp_path: Path) -> None:
+    """Família não é silo: três provedores vivos seguem, mesmo numa família só."""
     politica = BudgetPolicy(tmp_path / "policy.json")
     decisao = politica.decide(
         _obs(remaining=20, providers=3, endpoints=8, familias=1)
     )
-    assert decisao is PolicyDecision.DEFER
+    assert decisao is None
 
 
 def test_falha_de_schema_persistente_recomenda_switch(tmp_path: Path) -> None:

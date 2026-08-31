@@ -58,7 +58,7 @@ from providers.catalog import (
     load_discovery_snapshot,
 )
 from providers.registry import REGISTRY_NAME, EndpointRegistry
-from vault.config import get_settings
+from vault.config import SECRETS_FILE_HINT, get_settings
 from vault.runtime_io import read_private_json, redact_json, write_private_json
 from vault.work.quota_store import load_ledger, persist_ledger
 from vault.work.quotas import QuotaLedger
@@ -385,7 +385,7 @@ async def main(argv: Sequence[str] | None = None) -> int:
     settings = get_settings()
     adapters = build_adapters(settings)
     if not adapters:
-        print("nenhuma credencial de provedor em ~/.config/vault-autodidata/secrets.env")
+        print(f"nenhuma credencial de provedor em {SECRETS_FILE_HINT}")
         return 1
     if args.provider:
         adapter = adapters.get(args.provider)

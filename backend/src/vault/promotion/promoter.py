@@ -43,7 +43,7 @@ from typing import Any
 from vault.events import EventType
 from vault.promotion.code_patch import CodePatch, CodePatchRefused
 from vault.promotion.patch import CorpusPatch, PatchRefused
-from vault.quorum.engine import MIN_FAMILIES, MIN_PROVIDERS, MIN_VALID_VOTES, decide_panel
+from vault.quorum.engine import MIN_PROVIDERS, MIN_VALID_VOTES, decide_panel
 from vault.quorum.models import DecisionStatus, Panel, RecommendedAction
 
 PATCH_DIGEST_KEY = "patch_digest"
@@ -141,10 +141,9 @@ def verify_quorum(panel: Panel, patch: CorpusPatch) -> None:
         raise PromotionRefused(
             f"{decisao.valid_vote_count} votos válidos; mínimo é {MIN_VALID_VOTES}"
         )
-    if decisao.provider_count < MIN_PROVIDERS or decisao.family_count < MIN_FAMILIES:
+    if decisao.provider_count < MIN_PROVIDERS:
         raise PromotionRefused(
-            f"diversidade insuficiente: {decisao.provider_count} provedor(es), "
-            f"{decisao.family_count} família(s)"
+            f"diversidade insuficiente: {decisao.provider_count} provedor(es)"
         )
 
 

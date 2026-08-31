@@ -1,8 +1,9 @@
 """Gravação de credencial no arquivo de segredos, sem que ela apareça em lugar nenhum.
 
-O mecanismo canônico continua sendo `~/.config/vault-autodidata/secrets.env`, o mesmo
-que `vault.config` já lê. Este módulo só acrescenta o caminho de escrita, com quatro
-cuidados que não são opcionais:
+O mecanismo canônico é `~/.config/ane/secrets.env`; o legado
+`~/.config/vault-autodidata/secrets.env` só entra se o arquivo canônico não existir.
+É o mesmo arquivo que `vault.config` já lê. Este módulo só acrescenta o caminho de
+escrita, com quatro cuidados que não são opcionais:
 
 1. **Atômica.** Uma gravação interrompida não pode deixar o arquivo truncado — isso
    apagaria credenciais de outros provedores que ninguém pediu para apagar.

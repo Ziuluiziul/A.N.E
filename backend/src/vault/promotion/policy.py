@@ -50,11 +50,9 @@ class DiversityReport:
 
     @property
     def viável(self) -> bool:
-        # Painel = proponente + 3 avaliadores, todos distintos, 2 provedores e 2
-        # famílias — o mesmo piso do orçamentador (`_has_panel_diversity`). Sem as
-        # famílias, uma tarefa presa num único rol de família dizia "vai" para a
-        # política e o painel nunca nascia — loop eterno de backpressure.
-        return self.providers >= 2 and self.endpoints >= 4 and self.families >= 2
+        # Painel = proponente + 3 avaliadores, todos distintos, 2 provedores.
+        # Família é desempate, não silo: Groq vazio não adia o acervo vivo.
+        return self.providers >= 2 and self.endpoints >= 4
 
 
 @dataclass(frozen=True, slots=True)

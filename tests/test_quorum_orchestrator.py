@@ -1432,3 +1432,66 @@ def test_inventario_habilitado_omite_provedor_suspenso(tmp_path: Path) -> None:
 
     assert "groq" not in remaining
     assert "nvidia" in remaining
+
+
+async def test_painel_nasce_sem_groq_com_familia_unica(tmp_path: Path) -> None:
+    """Groq vazio não mata o painel: NVIDIA/Google/Nous ocupam papéis, mesma família."""
+    entries = (
+        ("nvidia", "llama-a", "llama"),
+        ("nvidia", "llama-b", "llama"),
+        ("google", "llama-g", "llama"),
+        ("nous", "llama-n", "llama"),
+    )
+    orchestrator, _calls, _store = build_orchestrator(
+        tmp_path,
+        votes={
+            "verificador-factual": "approve",
+            "critico-epistemologico": "approve",
+            "revisor-estrutural": "approve",
+            "arbitro": "approve",
+        },
+        entries=entries,
+        max_calls=10,
+    )
+    panel = await orchestrator.run(quorum_task())
+    assert panel.decision is not None
+    assert panel.decision.outcome.value == "promote"
+    provedores = {member.provider for member in panel.members} | {
+        panel.proposal.proposer.provider
+    }
+    assert "groq" not in provedores
+    assert len(provedores) >= 2
+    familias = {member.family for member in panel.members} | {
+        panel.proposal.proposer.family
+    }
+    assert familias == {"llama"}
+
+
+
+async def test_voto_vazio_queima_endpoint_nao_a_familia(tmp_path: Path) -> None:
+    entries = (
+        ("groq", "alpha-4", "llama"),
+        ("groq", "beta-3", "llama"),
+        ("nvidia", "gamma-2", "llama"),
+        ("google", "gemini-flash", "llama"),
+        ("nous", "hermes-1", "llama"),
+    )
+    orchestrator, _calls, _store = build_orchestrator(
+        tmp_path,
+        votes={
+            "verificador-factual": "approve",
+            "critico-epistemologico": "approve",
+            "revisor-estrutural": "approve",
+        },
+        entries=entries,
+        empty_endpoints={"alpha-4"},
+        max_calls=12,
+    )
+    panel = await orchestrator.create_panel(quorum_task())
+    panel = await orchestrator.collect_votes(panel)
+    queimados = orchestrator._failed_endpoints  # noqa: SLF001
+    assert "groq/alpha-4" in queimados
+    assert "groq/beta-3" not in queimados
+    assert "groq" not in queimados
+    vivos = {perfil.key for perfil in orchestrator._callable_profiles()}  # noqa: SLF001
+    assert "groq/beta-3" in vivos

@@ -109,9 +109,10 @@ def test_store_persiste_privado_sanitizado_e_monotonico(tmp_path: Path) -> None:
     assert secret not in serialized
     assert "raciocínio interno" not in serialized
     assert "raw_response" not in serialized
-    assert stat.S_IMODE(directory.stat().st_mode) == 0o700
-    assert stat.S_IMODE(store.log_path.stat().st_mode) == 0o600
-    assert stat.S_IMODE(store.lock_path.stat().st_mode) == 0o600
+    if os.name != "nt":
+        assert stat.S_IMODE(directory.stat().st_mode) == 0o700
+        assert stat.S_IMODE(store.log_path.stat().st_mode) == 0o600
+        assert stat.S_IMODE(store.lock_path.stat().st_mode) == 0o600
 
 
 def test_sanitizador_bloqueia_variantes_camelcase_de_raciocinio(tmp_path: Path) -> None:
@@ -178,6 +179,46 @@ def test_processos_concorrentes_recebem_revisoes_unicas(tmp_path: Path) -> None:
         event_id(index) for index in range(1, workers + 1)
     ]
     assert [event.timestamp for event in events] == sorted(event.timestamp for event in events)
+
+
+def test_append_em_dir_existente_nao_chmod_do_diretorio(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """W2: dir + jsonl já existem — só append. Sem mkdir, sem chmod, sem arquivo novo."""
+    directory = tmp_path / "events"
+    directory.mkdir()
+    log = directory / "events.jsonl"
+    log.write_text("", encoding="utf-8")
+    before = {path.name for path in directory.iterdir()}
+    chmod_calls: list[tuple[object, ...]] = []
+
+    def _chmod(*args: object, **kwargs: object) -> None:
+        chmod_calls.append(args)
+        raise PermissionError(13, "Permission denied")
+
+    monkeypatch.setattr(os, "chmod", _chmod)
+    event = OperationalEventStore(directory).append(draft())
+    after = {path.name for path in directory.iterdir()}
+    assert event.revision == 1
+    assert chmod_calls == []
+    assert "events.jsonl" in after
+    assert not (directory / ".events.lock").exists()
+    assert after == before
+    assert log.read_bytes().strip()
+
+
+def test_append_existente_nao_cria_lock_no_nt(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    directory = tmp_path / "events"
+    directory.mkdir()
+    (directory / "events.jsonl").write_text("", encoding="utf-8")
+    store = OperationalEventStore(directory)
+    monkeypatch.setattr(os, "name", "nt")
+    store.append(draft())
+    assert not store.lock_path.exists()
+    assert store.log_path.is_file()
+    assert len(store.load()) == 1
 
 
 def test_cauda_parcial_nao_engole_o_proximo_evento(tmp_path: Path) -> None:

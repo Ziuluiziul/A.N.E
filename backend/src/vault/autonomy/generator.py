@@ -154,8 +154,16 @@ class TaskGenerator:
         return sorted(found, key=lambda task: (-task.priority, task.id))[:_MAX_PER_SOURCE]
 
     def _isolated_notes(self, notes: list[Any]) -> list[AutonomousTask]:
+        """Ilha = zero wikilink resolvido para outro domínio, não grau global.
+
+        Física com 5 arestas internas era pulada (`degree > 1`) e nunca virava
+        tarefa: a fila ficava só em identidades já terminais. A ponte que o
+        corpus precisa é inter-domínio; DOI/ISBN/arXiv, não analogia.
+        """
         index = self.reader.index(notes)
+        by_id = {note.id: note for note in notes}
         degree: Counter[str] = Counter()
+        inter: Counter[str] = Counter()
         for note in notes:
             for link in self.reader.extract_links(note):
                 resolution = self.reader.resolve_link(link, index)
@@ -163,26 +171,63 @@ class TaskGenerator:
                     continue
                 degree[note.id] += 1
                 degree[resolution.target_id] += 1
+                alvo = by_id.get(resolution.target_id)
+                if alvo is not None and alvo.domain_id != note.domain_id:
+                    inter[note.id] += 1
+        destinos_por_dominio: dict[str, list[str]] = {}
+        for outra in notes:
+            if outra.kind == "moc":
+                continue
+            destinos_por_dominio.setdefault(outra.domain_id, []).append(outra.stem)
         found: list[AutonomousTask] = []
         for note in notes:
-            if note.kind == "moc" or degree[note.id] > 1:
+            if note.kind == "moc" or inter[note.id] > 0:
                 continue
-            source = {"note": note.id, "degree": degree[note.id], "regime": _REGIME}
+            source = {
+                "note": note.id,
+                "inter_domain": 0,
+                "regime": _REGIME,
+                "kind": "inter-domain-bridge-v3",
+                "wave": _idle_wave(),
+            }
+            alvo = note.path.as_posix()
+            destinos: list[str] = []
+            for dominio, stems in sorted(destinos_por_dominio.items()):
+                if dominio == note.domain_id:
+                    continue
+                destinos.extend(stems[:3])
+                if len(destinos) >= 8:
+                    break
+            lista = ", ".join(f"[[{stem}]]" for stem in destinos[:8]) or "(nenhuma)"
             found.append(
                 self._task(
                     origin=TaskOrigin.ISOLATED_NOTE,
                     source=source,
                     objective=(
-                        f"Revise as dependências reais de {note.path.as_posix()}, hoje com "
-                        f"grau {degree[note.id]}. Pode criar wikilink do vocabulário "
-                        "permitido, criar nota-ponte completa, ou deixar como está. "
-                        "Relação vale quando o conteúdo de uma é usado pela outra."
+                        f"A nota {alvo} não liga a outro domínio "
+                        f"(grau interno {degree[note.id]}, inter-domínio 0). "
+                        f"Um único replace do path {alvo} (relativo a knowledge/, "
+                        "sem prefixo knowledge/), conteúdo Markdown integral. "
+                        "Acrescente no máximo um wikilink na forma "
+                        "[[Stem]] <!-- relation:TIPO --> usando um Stem já existente "
+                        f"de outro domínio (exemplos: {lista}) e TIPO em "
+                        "navigation, prerequisite, extends, contrasts, evidence, "
+                        "operational ou historical. Só se o conteúdo de uma for "
+                        "usado pela outra. Fonte: DOI, ISBN ou arXiv já na nota "
+                        "alvo ou na destino. Não use create. Não invente Stem. "
+                        "Não reduza claims, wikilinks nem identificadores. "
+                        "Wikilink sem relation: ou quebrado reprova."
                     ),
                     priority=64,
                     domain=note.domain,
                     kind=TaskKind.CORPUS_REVIEW,
-                    corpus_entity=note.path.as_posix(),
-                    metadata={"degree": degree[note.id]},
+                    corpus_entity=alvo,
+                    metadata={
+                        "degree": degree[note.id],
+                        "inter_domain": 0,
+                        "bridge": "inter-domain",
+                        "lock_targets": True,
+                    },
                 )
             )
         return found[:_MAX_PER_SOURCE]

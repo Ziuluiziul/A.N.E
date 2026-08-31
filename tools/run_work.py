@@ -20,7 +20,7 @@ from providers import build_adapters
 from providers.catalog import DiscoverySnapshotError, load_all_snapshots
 from providers.inventory import Inventory, build_inventory
 from providers.registry import REGISTRY_NAME, EndpointRegistry
-from vault.config import get_settings
+from vault.config import SECRETS_FILE_HINT, get_settings
 from vault.runtime_io import read_private_json
 from vault.work.call_gate import ProviderCallGate
 from vault.work.ceilings import ceilings_from_declared, merge_provider_caps
@@ -120,7 +120,7 @@ async def main(argv: list[str] | None = None) -> int:
 
     adapters = build_adapters(settings)
     if not adapters:
-        print("nenhuma credencial de provedor em ~/.config/vault-autodidata/secrets.env")
+        print(f"nenhuma credencial de provedor em {SECRETS_FILE_HINT}")
         return 1
 
     try:

@@ -57,8 +57,9 @@ def secrets(tmp_path: Path) -> Path:
 def settings_de_teste(tmp_path: Path, secrets_file: Path) -> Settings:
     """Configuração inteiramente contida em `tmp_path`.
 
-    `_env_file` não é decoração: sem ele, `Settings()` continuaria lendo
-    `~/.config/vault-autodidata/secrets.env`, porque é o que `model_config` declara.
+    `_env_file` não é decoração: sem ele, `Settings()` continuaria lendo o arquivo
+    que `default_secrets_file()` resolver (`~/.config/ane/secrets.env` ou o legado
+    `~/.config/vault-autodidata/secrets.env`), porque é o que `model_config` declara.
     Um teste montado assim carregaria as credenciais reais do mantenedor para a
     memória e — no teste de conexão — sairia pela rede com elas. Foi exatamente o que
     aconteceu na primeira execução deste arquivo.
@@ -525,11 +526,61 @@ class TestSnapshot:
         self, tmp_path: Path, secrets: Path
     ) -> None:
         apertado = settings_de_teste(tmp_path, secrets).model_copy(update={"work_max_calls": 1})
-        assert concurrency_ceiling(3, apertado) == 1
+        assert concurrency_ceiling(3, apertado.work_max_calls) == 1
         snapshot = build_snapshot(apertado, ControlPreferences())
         for worker in snapshot.workers:
             assert worker.concurrency_max <= 1
             assert worker.concurrency <= worker.concurrency_max
+
+    def test_orcamento_visivel_usa_teto_do_pool(
+        self, tmp_path: Path, secrets: Path
+    ) -> None:
+        """O cartão não anuncia o sandbox de 6 quando o catálogo documenta mais."""
+        settings = settings_de_teste(tmp_path, secrets)
+        state = settings.state_dir
+        state.mkdir(parents=True, exist_ok=True)
+        (state / "models-groq-teste.json").write_bytes(
+            orjson.dumps(
+                {
+                    "provider": "groq",
+                    "models": [
+                        {
+                            "provider": "groq",
+                            "endpoint_id": "llama-3.1-8b",
+                            "family": "llama",
+                            "capabilities": ["completion"],
+                            "declared_limits": {
+                                "requests_per_minute": 30,
+                                "requests_per_day": 1_000,
+                            },
+                            "raw": {},
+                            "available": True,
+                        }
+                    ],
+                }
+            )
+        )
+        (state / "models-discovery.json").write_bytes(
+            orjson.dumps(
+                {
+                    "schema_version": 1,
+                    "status": "complete",
+                    "providers": {"groq": "models-groq-teste.json"},
+                }
+            )
+        )
+        snapshot = build_snapshot(settings, ControlPreferences())
+        assert snapshot.operation.budget == "30 chamadas por execução"
+        assert "6 chamadas" not in snapshot.operation.budget
+        verificador = next(w for w in snapshot.workers if w.id == "verificador-factual")
+        assert verificador.concurrency_max == 3
+        assert concurrency_ceiling(3, 30) == 3
+
+    def test_orcamento_sem_rpm_declarado_fica_no_piso(
+        self, tmp_path: Path, secrets: Path
+    ) -> None:
+        snapshot = build_snapshot(settings_de_teste(tmp_path, secrets), ControlPreferences())
+        assert snapshot.operation.budget == "6 chamadas por execu\u00e7\u00e3o"
 
     def test_preferencia_acima_do_teto_e_aparada(self, tmp_path: Path, secrets: Path) -> None:
         settings = settings_de_teste(tmp_path, secrets).model_copy(update={"work_max_calls": 2})

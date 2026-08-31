@@ -46,7 +46,12 @@ from vault.runtime_io import read_private_json
 from vault.telemetry import build_records, build_surfaces
 from vault.work.call_gate import ProviderCallGate
 from vault.work.capacity import CapacityHints
-from vault.work.ceilings import ceilings_from_declared, merge_provider_caps
+from vault.work.ceilings import (
+    WorkCeilings,
+    ceilings_from_declared,
+    effective_max_calls,
+    merge_provider_caps,
+)
 from vault.work.fitness import Tier, classificar
 from vault.work.quotas import RunBudget
 from vault.work.store import WorkStore
@@ -196,21 +201,55 @@ def _effective_concurrency(*, requested: int, max_calls: int) -> int:
     return max(1, min(requested, teto))
 
 
-def _teto_documentado(inventory: Inventory) -> tuple[dict[str, int], dict[str, int], int]:
+def _teto_documentado(inventory: Inventory) -> WorkCeilings:
     """RPM/RPD declarados viram cap em voo e orçamento do dia. Sem número, some zero."""
-    teto = ceilings_from_declared(
+    return ceilings_from_declared(
         (profile.model for profile in inventory.profiles),
         eligible=(profile.aptitude.eligible for profile in inventory.profiles),
     )
-    return teto.provider_caps, teto.endpoint_caps, teto.daily_calls
+
+
+def plan_worker_limits(
+    *,
+    work_max_calls: int,
+    worker_concurrency: int,
+    configured_caps: dict[str, int],
+    inventory: Inventory,
+    max_calls_override: int | None = None,
+    concurrency_override: int | None = None,
+) -> tuple[int, int, dict[str, int], dict[str, int]]:
+    """Teto efetivo do processo: o do pool vivo, não o sandbox de 6 chamadas.
+
+    `--max-calls` e `--concurrency` continuam sendo o único jeito de apertar à
+    mão. Sem override, o RPM simultâneo do pool sobe o orçamento (nunca RPD
+    nem RPM×1440) e a soma dos caps sobe a concorrência; `_effective_concurrency`
+    ainda recorta pelo orçamento (~4 chamadas por quórum), agora com o teto certo.
+    """
+    teto = _teto_documentado(inventory)
+    provider_caps = merge_provider_caps(configured_caps, teto.provider_caps)
+    max_calls = (
+        max_calls_override
+        if max_calls_override is not None
+        else effective_max_calls(work_max_calls, teto)
+    )
+    concurrency = (
+        concurrency_override
+        if concurrency_override is not None
+        else max(worker_concurrency, sum(provider_caps.values()) or 1)
+    )
+    concurrency = _effective_concurrency(requested=concurrency, max_calls=max_calls)
+    return max_calls, concurrency, provider_caps, teto.endpoint_caps
 
 
 def _install_signal_handlers(stop: asyncio.Event) -> None:
     loop = asyncio.get_running_loop()
-    for signum in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP):
+    for name in ("SIGINT", "SIGTERM", "SIGHUP", "SIGUSR1", "SIGUSR2"):
+        signum = getattr(signal, name, None)
+        if signum is None:
+            continue
         try:
             loop.add_signal_handler(signum, stop.set)
-        except (NotImplementedError, RuntimeError):
+        except (NotImplementedError, RuntimeError, OSError, ValueError):
             continue
 
 
@@ -227,10 +266,6 @@ class _NoCredentialExecutor:
 async def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     settings = get_settings()
-    max_calls = args.max_calls if args.max_calls is not None else settings.work_max_calls
-    concurrency = (
-        args.concurrency if args.concurrency is not None else settings.worker_concurrency
-    )
     # A concorrência deriva do orçamento do processo (cada quórum exige ~4
     # chamadas). O ceiling da política é o limite de *expansão* de um fechamento
     # viável, não o teto de planejamento — usá-lo aqui cortaria o que o mantenedor
@@ -246,15 +281,14 @@ async def main(argv: list[str] | None = None) -> int:
 
     registry = EndpointRegistry.from_dict(read_private_json(settings.state_dir / REGISTRY_NAME))
     inventory = build_inventory(snapshots, registry)
-    derivado, por_endpoint, diario = _teto_documentado(inventory)
-    provider_caps = merge_provider_caps(
-        dict(getattr(settings, "provider_concurrency", {})), derivado
+    max_calls, concurrency, provider_caps, por_endpoint = plan_worker_limits(
+        work_max_calls=settings.work_max_calls,
+        worker_concurrency=settings.worker_concurrency,
+        configured_caps=dict(getattr(settings, "provider_concurrency", {})),
+        inventory=inventory,
+        max_calls_override=args.max_calls,
+        concurrency_override=args.concurrency,
     )
-    if args.max_calls is None:
-        max_calls = max(max_calls, diario)
-    if args.concurrency is None:
-        concurrency = max(concurrency, sum(provider_caps.values()) or 1)
-    concurrency = _effective_concurrency(requested=concurrency, max_calls=max_calls)
     call_gate = ProviderCallGate(provider_caps, endpoint_caps=por_endpoint)
     inventory = Inventory(
         profiles=[

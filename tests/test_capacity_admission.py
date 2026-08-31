@@ -95,14 +95,9 @@ class TestCapacidade:
         assert resultado.limiting_factor is LimitingFactor.PROVIDER
         assert resultado.providers_available < MIN_PROVIDERS
 
-    def test_familias_abaixo_do_minimo_nao_formam_painel(self) -> None:
-        """Escrito contra `MIN_FAMILIES`, não contra um número.
-
-        O estimador e `decide_panel` precisam responder a mesma pergunta; um literal
-        aqui faria o teste continuar verde no dia em que a política mudasse e o
-        controlador passasse a admitir o que o motor recusa.
-        """
-        familias = [f"f{indice}" for indice in range(MIN_FAMILIES - 1)] or ["f0"]
+    def test_familia_unica_com_dois_provedores_forma_painel(self) -> None:
+        """Família não é silo: dois provedores adequados fecham o painel."""
+        familias = [f"f{indice}" for indice in range(max(MIN_FAMILIES - 1, 1))]
         inv = inventario(
             *[
                 perfil("groq" if indice % 2 == 0 else "nvidia", f"e{indice}", familias[0])
@@ -110,8 +105,8 @@ class TestCapacidade:
             ]
         )
         resultado = capacidade(inv)
-        assert resultado.complete_panels == 0
-        assert resultado.limiting_factor is LimitingFactor.FAMILY
+        assert resultado.complete_panels == 1
+        assert resultado.limiting_factor is LimitingFactor.NONE
 
     def test_diversidade_suficiente_mas_sem_cota_nao_forma_painel(self) -> None:
         ledger = QuotaLedger()

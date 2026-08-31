@@ -35,7 +35,7 @@ from vault.control.models import (
     WorkerPatch,
 )
 from vault.control.preferences import PreferenceStore
-from vault.control.snapshot import build_snapshot, concurrency_ceiling
+from vault.control.snapshot import build_snapshot, concurrency_ceiling, execution_budget
 from vault.work.roles import ROLES
 
 router = APIRouter(prefix="/api/control", tags=["control"])
@@ -94,7 +94,7 @@ def patch_worker(worker_id: WorkerId, body: WorkerPatch) -> ControlSnapshot:
     # cliente desatualizado, ou um pedido montado à mão, não pode conceder mais
     # simultaneidade do que o papel e o orçamento admitem.
     if body.concurrency is not None:
-        teto = concurrency_ceiling(role.max_concurrency, settings)
+        teto = concurrency_ceiling(role.max_concurrency, execution_budget(settings))
         if body.concurrency > teto:
             raise HTTPException(
                 status_code=422,

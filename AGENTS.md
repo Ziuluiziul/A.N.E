@@ -77,7 +77,7 @@ que fontes externas não foram verificadas. Isso continua sendo julgamento human
 provedor; `integrations/google_workspace/` cobre as APIs do Workspace; `frontend/` é
 a cena 3D em TypeScript e Three.js; `tools/` são os scripts curtos que o `Makefile`
 chama; `tests/` os testes; `runtime/` o estado local ignorado pelo Git. Segredos
-moram em `~/.config/vault-autodidata/secrets.env` e nunca no repositório.
+moram em `~/.config/ane/secrets.env` (legado `~/.config/vault-autodidata/secrets.env`) e nunca no repositório.
 
 ## Escopo
 

@@ -25,7 +25,7 @@ from providers.catalog import (
     load_discovery_manifest,
     load_discovery_snapshot,
 )
-from vault.config import get_settings
+from vault.config import SECRETS_FILE_HINT, get_settings
 from vault.runtime_io import redact_json, write_private_json
 
 
@@ -74,7 +74,7 @@ async def main(argv: Sequence[str] | None = None) -> int:
     settings = get_settings()
     adapters = build_adapters(settings)
     if not adapters:
-        print("nenhuma credencial de provedor em ~/.config/vault-autodidata/secrets.env")
+        print(f"nenhuma credencial de provedor em {SECRETS_FILE_HINT}")
         print(
             "preencha GEMINI_API_KEY, GROQ_API_KEY, NVIDIA_API_KEY, "
             "OLLAMA_API_KEY, OPENROUTER_API_KEY ou NOUS_API_KEY"

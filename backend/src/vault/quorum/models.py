@@ -254,8 +254,6 @@ class Panel(BaseModel):
             raise ValueError("um endpoint não pode votar duas vezes no painel")
         if len({member.provider for member in self.members}) < 2:
             raise ValueError("painel precisa de ao menos dois provedores")
-        if len({member.family for member in self.members}) < 2:
-            raise ValueError("painel precisa de ao menos duas famílias")
 
         known = set(member_keys)
         vote_keys = [vote.reviewer.key for vote in self.votes]

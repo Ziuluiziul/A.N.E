@@ -12,7 +12,7 @@ client_secret.
 from __future__ import annotations
 
 from integrations.google_workspace import SERVICES, WorkspaceClient, default_scopes
-from vault.config import get_settings
+from vault.config import SECRETS_FILE_HINT, get_settings
 
 
 def main() -> int:
@@ -32,7 +32,7 @@ def _main() -> int:
 
     if secret is None or token is None:
         print("faltam GOOGLE_WORKSPACE_CLIENT_SECRET_FILE e/ou GOOGLE_WORKSPACE_TOKEN_FILE")
-        print("em ~/.config/vault-autodidata/secrets.env — ver docs/GOOGLE-WORKSPACE.md")
+        print(f"em {SECRETS_FILE_HINT} — ver docs/GOOGLE-WORKSPACE.md")
         return 1
     if not secret.is_file():
         print(f"client_secret não encontrado: {secret}")

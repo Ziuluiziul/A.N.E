@@ -19,7 +19,7 @@ from providers import build_adapters
 from providers.catalog import DiscoverySnapshotError, load_all_snapshots
 from providers.inventory import build_inventory
 from providers.registry import REGISTRY_NAME, EndpointRegistry
-from vault.config import get_settings
+from vault.config import SECRETS_FILE_HINT, get_settings
 from vault.events import OperationalEventRecorder, OperationalEventStore
 from vault.quorum import (
     CORPUS_PATCH_ALLOW_CREATE_KEY,
@@ -146,7 +146,7 @@ async def main(argv: list[str] | None = None) -> int:
     )
     adapters = build_adapters(settings)
     if not adapters:
-        print("nenhuma credencial de provedor em ~/.config/vault-autodidata/secrets.env")
+        print(f"nenhuma credencial de provedor em {SECRETS_FILE_HINT}")
         return 1
 
     ledger, ledger_path = load_ledger(settings.state_dir)

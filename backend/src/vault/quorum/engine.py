@@ -18,7 +18,7 @@ from vault.quorum.models import (
 
 MIN_VALID_VOTES = 3
 MIN_PROVIDERS = 2
-MIN_FAMILIES = 2
+MIN_FAMILIES = 2  # preferência de desempate; não é porta do painel
 
 # Um gateway identifica a fronteira contratada, não necessariamente uma origem de
 # inferência independente. Enquanto o painel não persistir e comparar o upstream
@@ -115,16 +115,12 @@ def decide_panel(
             tally=tally,
         )
     providers = {vote.reviewer.provider for vote in valid}
-    families = {vote.reviewer.family for vote in valid}
-    if len(providers) < MIN_PROVIDERS or len(families) < MIN_FAMILIES:
+    if len(providers) < MIN_PROVIDERS:
         return _decision(
             panel,
             outcome=RecommendedAction.ESCALATE,
             status=DecisionStatus.DECIDED,
-            reason=(
-                f"diversidade insuficiente: {len(providers)} provedor(es), "
-                f"{len(families)} família(s)"
-            ),
+            reason=f"diversidade insuficiente: {len(providers)} provedor(es)",
             valid=valid,
             tally=tally,
         )

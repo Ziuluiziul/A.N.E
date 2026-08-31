@@ -8,7 +8,7 @@ from typing import Any
 import pytest
 from pydantic import SecretStr
 
-from vault.config import REPO_ROOT, SECRETS_FILE, Settings
+from vault.config import REPO_ROOT, SECRETS_FILE, Settings, default_secrets_file
 
 
 def settings_isoladas(**overrides: Any) -> Settings:
@@ -30,7 +30,8 @@ def test_caminhos_padrao_apontam_para_dentro_do_repositorio(repo_root: Path) -> 
 
 
 def test_segredos_moram_fora_do_repositorio(repo_root: Path) -> None:
-    assert Path.home() / ".config" / "vault-autodidata" / "secrets.env" == SECRETS_FILE
+    assert SECRETS_FILE.name == "secrets.env"
+    assert ".config" in SECRETS_FILE.parts
     assert repo_root not in SECRETS_FILE.parents
 
 
@@ -163,3 +164,54 @@ def test_caminhos_podem_ser_injetados_programaticamente(tmp_path: Path) -> None:
     settings = settings_isoladas(corpus_dir=corpus, runtime_dir=runtime)
     assert settings.corpus_dir == corpus
     assert settings.runtime_dir == runtime
+
+
+def _home_de_teste(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    home = tmp_path / "home"
+    home.mkdir()
+    monkeypatch.setattr("vault.config.Path.home", lambda: home)
+    monkeypatch.delenv("VAULT_SECRETS_FILE", raising=False)
+    return home
+
+
+def test_default_secrets_file_prefere_ane(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    home = _home_de_teste(tmp_path, monkeypatch)
+    destino = home / ".config" / "ane"
+    destino.mkdir(parents=True)
+    (destino / "secrets.env").write_text("# dummy\nKEY=\n", encoding="utf-8")
+    assert default_secrets_file() == destino / "secrets.env"
+
+
+def test_default_secrets_file_cai_no_legado_mesmo_ausente(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    home = _home_de_teste(tmp_path, monkeypatch)
+    assert default_secrets_file() == home / ".config" / "vault-autodidata" / "secrets.env"
+
+
+def test_default_secrets_file_ane_vence_quando_ambos_existem(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    home = _home_de_teste(tmp_path, monkeypatch)
+    ane = home / ".config" / "ane"
+    legado = home / ".config" / "vault-autodidata"
+    ane.mkdir(parents=True)
+    legado.mkdir(parents=True)
+    (ane / "secrets.env").write_text("# dummy\nKEY=\n", encoding="utf-8")
+    (legado / "secrets.env").write_text("# dummy\nKEY=\n", encoding="utf-8")
+    assert default_secrets_file() == ane / "secrets.env"
+
+
+def test_default_secrets_file_override_vence_ane(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    home = _home_de_teste(tmp_path, monkeypatch)
+    ane = home / ".config" / "ane"
+    ane.mkdir(parents=True)
+    (ane / "secrets.env").write_text("# dummy\nKEY=\n", encoding="utf-8")
+    override = tmp_path / "custom.env"
+    override.write_text("# dummy\nKEY=\n", encoding="utf-8")
+    monkeypatch.setenv("VAULT_SECRETS_FILE", str(override))
+    assert default_secrets_file() == override

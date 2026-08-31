@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
-import fcntl
+try:
+    import fcntl
+except ImportError:  # NT
+    fcntl = None  # type: ignore[assignment]
+
 import math
 import os
 import re
@@ -154,6 +158,19 @@ def _strictly_increasing(events: Iterable[OperationalEvent]) -> list[Operational
         last_revision = event.revision
         accepted.append(event)
     return accepted
+
+
+def _chmod_private_file(descriptor: int) -> None:
+    """Ajusta modo do arquivo aberto. No NT não chmod — Errno 13 mesmo com Full control."""
+    if os.name == "nt":
+        return
+    fchmod = getattr(os, "fchmod", None)
+    if fchmod is None:
+        return
+    try:
+        fchmod(descriptor, _PRIVATE_FILE_MODE)
+    except OSError:
+        return
 
 
 class OperationalEventStore:
@@ -360,25 +377,74 @@ class OperationalEventStore:
     def _prepare_directory(self) -> None:
         if self.directory.is_symlink():
             raise OperationalEventStoreError("diretório de eventos não pode ser link simbólico")
-        self.directory.mkdir(parents=True, mode=_PRIVATE_DIRECTORY_MODE, exist_ok=True)
-        os.chmod(self.directory, _PRIVATE_DIRECTORY_MODE)
+        if self.directory.exists():
+            # Dir já existe: nunca mkdir, nunca chmod. Append só no jsonl.
+            return
+        try:
+            self.directory.mkdir(parents=True, mode=_PRIVATE_DIRECTORY_MODE)
+        except FileExistsError:
+            # Corrida: outro processo criou o dir. Não chmod no caminho existente.
+            return
+        if os.name != "nt":
+            try:
+                os.chmod(self.directory, _PRIVATE_DIRECTORY_MODE)
+            except OSError:
+                return
+
+    def _open_lock_descriptor(self) -> int | None:
+        """Abre ``.events.lock`` se já existir; senão trava o jsonl.
+
+        Dir + jsonl existentes: nenhum arquivo novo. No NT, lock ausente não
+        é criado — o append segue. Bootstrap POSIX (dir recém-criado, jsonl
+        ainda ausente) ainda pode criar o lock.
+        """
+        cloexec = getattr(os, "O_CLOEXEC", 0)
+        nofollow = getattr(os, "O_NOFOLLOW", 0)
+        existing = os.O_RDWR | cloexec | nofollow
+        jsonl_ready = self.log_path.is_file() and not self.log_path.is_symlink()
+        lock_ready = self.lock_path.exists() and not self.lock_path.is_symlink()
+        if lock_ready:
+            try:
+                return os.open(self.lock_path, existing)
+            except OSError:
+                return None
+        if jsonl_ready:
+            if os.name == "nt" or fcntl is None:
+                return None
+            try:
+                return os.open(self.log_path, existing)
+            except OSError:
+                return None
+        if os.name == "nt":
+            return None
+        try:
+            return os.open(
+                self.lock_path,
+                os.O_RDWR | os.O_CREAT | cloexec | nofollow,
+                _PRIVATE_FILE_MODE,
+            )
+        except OSError:
+            return None
 
     @contextmanager
     def _exclusive_lock(self):
-        flags = os.O_RDWR | os.O_CREAT | os.O_CLOEXEC | os.O_NOFOLLOW
-        try:
-            descriptor = os.open(self.lock_path, flags, _PRIVATE_FILE_MODE)
-        except OSError as error:
-            raise OperationalEventStoreError("lock do event log não pôde ser aberto") from error
+        descriptor = self._open_lock_descriptor()
+        if descriptor is None:
+            yield
+            return
         locked = False
         try:
-            os.fchmod(descriptor, _PRIVATE_FILE_MODE)
-            fcntl.flock(descriptor, fcntl.LOCK_EX)
-            locked = True
+            _chmod_private_file(descriptor)
+            if fcntl is not None:
+                try:
+                    fcntl.flock(descriptor, fcntl.LOCK_EX)
+                    locked = True
+                except OSError:
+                    pass
             yield
         finally:
             try:
-                if locked:
+                if locked and fcntl is not None:
                     fcntl.flock(descriptor, fcntl.LOCK_UN)
             finally:
                 os.close(descriptor)
@@ -386,12 +452,14 @@ class OperationalEventStore:
     def _append_line(self, line: bytes) -> None:
         separator = b"\n" if self._log_needs_separator() else b""
         flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND | os.O_CLOEXEC | os.O_NOFOLLOW
+        existed = self.log_path.is_file() and not self.log_path.is_symlink()
         try:
             descriptor = os.open(self.log_path, flags, _PRIVATE_FILE_MODE)
         except OSError as error:
             raise OperationalEventStoreError("event log não pôde ser aberto") from error
         try:
-            os.fchmod(descriptor, _PRIVATE_FILE_MODE)
+            if not existed:
+                _chmod_private_file(descriptor)
             with os.fdopen(descriptor, "ab", closefd=False) as stream:
                 stream.write(separator + line)
                 stream.flush()
@@ -417,9 +485,16 @@ class OperationalEventStore:
             os.close(descriptor)
 
     def _fsync_directory(self) -> None:
+        if os.name == "nt":
+            return
         flags = os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC
-        descriptor = os.open(self.directory, flags)
+        try:
+            descriptor = os.open(self.directory, flags)
+        except OSError:
+            return
         try:
             os.fsync(descriptor)
+        except OSError:
+            return
         finally:
             os.close(descriptor)

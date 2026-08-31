@@ -26,7 +26,6 @@ from enum import StrEnum
 
 from providers.inventory import EndpointProfile, Inventory
 from vault.quorum.engine import (
-    MIN_FAMILIES,
     MIN_PROVIDERS,
     MIN_VALID_VOTES,
     provider_counts_for_quorum,
@@ -107,10 +106,7 @@ class QuorumCapacity:
 
 def _diverso(grupo: Sequence[EndpointProfile]) -> bool:
     """A mesma diversidade que `decide_panel` exige dos votos válidos."""
-    return (
-        len({perfil.provider for perfil in grupo}) >= MIN_PROVIDERS
-        and len({perfil.family for perfil in grupo}) >= MIN_FAMILIES
-    )
+    return len({perfil.provider for perfil in grupo}) >= MIN_PROVIDERS
 
 
 def _montar_revisores(pool: list[EndpointProfile]) -> list[EndpointProfile] | None:
@@ -140,14 +136,11 @@ def _fator_da_falta(pool: Sequence[EndpointProfile]) -> tuple[LimitingFactor, st
             f"{len(pool)} endpoint(s) elegíveis para {MIN_VALID_VOTES} votos",
         )
     provedores = len({perfil.provider for perfil in pool})
-    familias = len({perfil.family for perfil in pool})
     if provedores < MIN_PROVIDERS:
         return LimitingFactor.PROVIDER, f"{provedores} provedor(es), mínimo {MIN_PROVIDERS}"
-    if familias < MIN_FAMILIES:
-        return LimitingFactor.FAMILY, f"{familias} família(s), mínimo {MIN_FAMILIES}"
     return (
         LimitingFactor.DIVERSITY,
-        "há provedores e famílias suficientes no pool, mas não num mesmo conjunto",
+        "há provedores suficientes no pool, mas não num mesmo conjunto",
     )
 
 

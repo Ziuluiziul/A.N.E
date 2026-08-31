@@ -39,6 +39,7 @@ from vault.control.models import (
 )
 from vault.control.preferences import ControlPreferences
 from vault.operational import worker_palette_token
+from vault.work.ceilings import WorkCeilings, ceilings_from_declared, effective_max_calls
 from vault.work.roles import ROLES
 
 # Provedores que aceitam endpoint próprio. Nenhum deles hoje: os adaptadores falam
@@ -176,15 +177,33 @@ def _providers(
     return linhas
 
 
-def concurrency_ceiling(role_max: int, settings: Settings) -> int:
-    """O menor entre o teto do papel e o orçamento da execução.
+def concurrency_ceiling(role_max: int, budget_calls: int) -> int:
+    """O menor entre o teto do papel e o orçamento efetivo da execução.
 
     O orçamento entra porque não adianta permitir seis tarefas simultâneas quando a
     execução inteira só pode fazer seis chamadas: o teto anunciado seria maior do que
     o que o sistema consegue honrar, e um limite que não se sustenta é pior que um
-    limite apertado.
+    limite apertado. O número é o teto do pool vivo, não o sandbox de
+    `work_max_calls`.
     """
-    return max(0, min(role_max, settings.work_max_calls))
+    return max(0, min(role_max, budget_calls))
+
+
+def teto_do_inventario(inventory: Inventory | None) -> WorkCeilings | None:
+    """O mesmo caminho de teto que o worker usa. Sem catálogo, não há pool."""
+    if inventory is None or not inventory.profiles:
+        return None
+    return ceilings_from_declared(
+        (profile.model for profile in inventory.profiles),
+        eligible=(profile.aptitude.eligible for profile in inventory.profiles),
+    )
+
+
+def execution_budget(settings: Settings, inventory: Inventory | None = None) -> int:
+    """Chamadas por execução visíveis no Atlas e honradas pelo worker."""
+    if inventory is None:
+        inventory, _, _ = _inventory(settings)
+    return effective_max_calls(settings.work_max_calls, teto_do_inventario(inventory))
 
 
 def _resolve_endpoint(
@@ -215,10 +234,10 @@ def _resolve_endpoint(
 
 
 def _workers(
-    settings: Settings,
     preferences: ControlPreferences,
     inventory: Inventory | None,
     em_execucao: dict[str, int],
+    budget_calls: int,
 ) -> list[WorkerState]:
     linhas: list[WorkerState] = []
     # `enumerate` na mesma ordem de `ROLES`, que é a que a projeção operacional usa para
@@ -232,7 +251,7 @@ def _workers(
             preferencia.provider,
             preferencia.endpoint_id,
         )
-        teto = concurrency_ceiling(role.max_concurrency, settings)
+        teto = concurrency_ceiling(role.max_concurrency, budget_calls)
         # Sem preferência declarada, o efetivo é o teto do papel sob AUTO e zero sem
         # ele: ligar trabalho por omissão seria decidir no lugar do mantenedor.
         if preferencia.concurrency is not None:
@@ -278,6 +297,7 @@ def _operation(
     settings: Settings,
     preferences: ControlPreferences,
     workers: list[WorkerState],
+    budget_calls: int,
 ) -> tuple[OperationState, dict[str, int]]:
     indisponivel: dict[str, str] = {}
     fila: int | None = None
@@ -340,7 +360,7 @@ def _operation(
             last_cycle=ultimo_ciclo,
             next_run=None,
             calls=None,
-            budget=f"{settings.work_max_calls} chamadas por execução",
+            budget=f"{budget_calls} chamadas por execução",
             failures=falhas,
             last_audit=None,
             unavailable=indisponivel,
@@ -353,13 +373,14 @@ def build_snapshot(settings: Settings, preferences: ControlPreferences) -> Contr
     """Uma leitura coerente de tudo que o painel mostra, com a hora em que foi tirada."""
     inventory, cobertos, motivo_catalogo = _inventory(settings)
     notices = [motivo_catalogo] if motivo_catalogo else []
+    budget_calls = execution_budget(settings, inventory)
 
     # Duas passagens: a primeira precisa da contagem por papel, que vem da fila; a
     # segunda precisa dos trabalhadores, que dependem da contagem. Montar a operação
     # com a lista vazia e refazê-la é mais barato que inverter a dependência.
-    _, por_papel = _operation(settings, preferences, [])
-    workers = _workers(settings, preferences, inventory, por_papel)
-    operation, _ = _operation(settings, preferences, workers)
+    _, por_papel = _operation(settings, preferences, [], budget_calls)
+    workers = _workers(preferences, inventory, por_papel, budget_calls)
+    operation, _ = _operation(settings, preferences, workers, budget_calls)
 
     return ControlSnapshot(
         providers=_providers(settings, inventory, cobertos, motivo_catalogo),

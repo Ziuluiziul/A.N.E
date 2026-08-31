@@ -181,7 +181,7 @@ runtime/       estado local: propostas, logs, banco — ignorado pelo Git
 
 ## Credenciais
 
-As chaves ficam em `~/.config/vault-autodidata/secrets.env`, com permissão 600, fora do
+As chaves ficam em `~/.config/ane/secrets.env` (legado `~/.config/vault-autodidata/secrets.env`), com permissão 600, fora do
 repositório. `.env.example` explica cada variável sem conter valor nenhum. Sem
 credencial, os adaptadores simplesmente não são construídos e o resto do sistema
 funciona igual — o corpus e a cena 3D não dependem de nenhum provedor.

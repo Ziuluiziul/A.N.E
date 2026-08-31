@@ -1,8 +1,9 @@
 """Configuração do projeto.
 
-As chaves vêm de ~/.config/vault-autodidata/secrets.env, fora do repositório. O
-ambiente do processo tem precedência, o que permite sobrepor um valor numa chamada
-isolada sem editar o arquivo.
+As chaves vêm de ~/.config/ane/secrets.env (canônico). Se esse arquivo não
+existir, cai no legado ~/.config/vault-autodidata/secrets.env. Ambos ficam fora
+do repositório. O ambiente do processo tem precedência, o que permite sobrepor
+um valor numa chamada isolada sem editar o arquivo.
 
 As chaves são `SecretStr`, então `repr` e `model_dump_json` mostram `**********` em
 vez do valor — um log ou um traceback não vaza credencial por acidente.
@@ -12,6 +13,7 @@ texto puro chama `get_secret_value()` no limite do SDK, e só lá.
 
 from __future__ import annotations
 
+import os
 import re
 from functools import lru_cache
 from pathlib import Path
@@ -21,7 +23,23 @@ from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-SECRETS_FILE = Path.home() / ".config" / "vault-autodidata" / "secrets.env"
+
+
+def default_secrets_file() -> Path:
+    """Caminho do arquivo de segredos: override, canônico ane, depois legado."""
+    override = os.environ.get("VAULT_SECRETS_FILE")
+    if override:
+        return Path(override)
+    canonical = Path.home() / ".config" / "ane" / "secrets.env"
+    if canonical.is_file():
+        return canonical
+    return Path.home() / ".config" / "vault-autodidata" / "secrets.env"
+
+
+SECRETS_FILE = default_secrets_file()
+SECRETS_FILE_HINT = (
+    "~/.config/ane/secrets.env (legado ~/.config/vault-autodidata/secrets.env)"
+)
 SECRET_SHAPE = re.compile(
     r"AIza[0-9A-Za-z_\-]{20,}|gsk_[0-9A-Za-z]{20,}|nvapi-[0-9A-Za-z_\-]{20,}"
     r"|sk-or-v1-[0-9A-Za-z_\-]{20,}"
@@ -60,7 +78,7 @@ class Settings(BaseSettings):
     # de credencial precisa de um caminho que o teste possa apontar para um diretório
     # temporário; sem isso, testar a gravação exigiria escrever no arquivo real.
     secrets_file: Path = Field(
-        default=SECRETS_FILE,
+        default_factory=default_secrets_file,
         validation_alias="VAULT_SECRETS_FILE",
     )
 
@@ -178,4 +196,5 @@ class Settings(BaseSettings):
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
-    return Settings()
+    caminho = default_secrets_file()
+    return Settings(_env_file=caminho, secrets_file=caminho)  # type: ignore[call-arg]

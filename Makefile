@@ -26,25 +26,25 @@ lint:  ## Ruff, mypy e ESLint
 	uv run mypy
 	cd frontend && pnpm run lint
 
-icon:  ## Instala o lançador do Atlas no menu de aplicativos do GNOME
+icon:  ## Instala o lançador do A.N.E. no menu de aplicativos do GNOME
 	@mkdir -p $(HOME)/.local/share/applications $(HOME)/.local/share/icons/hicolor/scalable/apps
-	@cp tools/atlas.svg $(HOME)/.local/share/icons/hicolor/scalable/apps/vault-atlas.svg
+	@cp tools/ane.svg $(HOME)/.local/share/icons/hicolor/scalable/apps/ane.svg
 	@printf '%s\n' \
 		'[Desktop Entry]' \
 		'Type=Application' \
 		'Name=A.N.E.' \
 		'Comment=Atlas Neural-Epistêmico — corpus interdisciplinar vivo' \
 		'Exec=$(CURDIR)/tools/atlas.sh' \
-		'Icon=vault-atlas' \
+		'Icon=ane' \
 		'Terminal=true' \
 		'Categories=Education;' \
-		'Keywords=atlas;vault;corpus;conhecimento;grafo;3d;' \
+		'Keywords=atlas,ane,corpus,conhecimento,grafo,3d;' \
 		'StartupNotify=true' \
-		> $(HOME)/.local/share/applications/vault-atlas.desktop
-	@chmod +x $(HOME)/.local/share/applications/vault-atlas.desktop
+		> $(HOME)/.local/share/applications/ane.desktop
+	@chmod +x $(HOME)/.local/share/applications/ane.desktop
 	@update-desktop-database $(HOME)/.local/share/applications 2>/dev/null || true
 	@gtk-update-icon-cache -f -t $(HOME)/.local/share/icons/hicolor 2>/dev/null || true
-	@echo "lançador instalado: procure por \"A.N.E.\" no menu"
+	@echo "lançador do A.N.E. instalado: procure por \"A.N.E.\" no menu"
 
 dev:  ## Sobe backend, frontend e worker (Ctrl-C encerra todos)
 	@tools/atlas.sh

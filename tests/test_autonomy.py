@@ -906,6 +906,81 @@ def test_capacidade_ociosa_onda_diaria_nasce_identidade_nova(
     assert idle_a[0].corpus_entity == idle_b[0].corpus_entity == "Dados/Nota aberta.md"
 
 
+def test_ilha_interdominio_nasce_mesmo_com_grau_interno(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Grau interno alto não esconde ilha; wikilink para outro domínio isenta."""
+    from vault.autonomy import generator as gen
+
+    monkeypatch.setattr(gen, "_idle_wave", lambda: "2026-08-30")
+    root = tmp_path / "knowledge"
+    (root / "Fisica").mkdir(parents=True)
+    (root / "Dados").mkdir(parents=True)
+    (root / "Fisica" / "Nota fisica.md").write_text(
+        """---
+title: Nota fisica
+domain: fisica
+kind: fundamento
+epistemic_status: mixed
+updated: 2026-08-30
+---
+
+# Nota fisica
+
+[[Outra fisica]] <!-- relation:related -->
+""",
+        encoding="utf-8",
+    )
+    (root / "Fisica" / "Outra fisica.md").write_text(
+        """---
+title: Outra fisica
+domain: fisica
+kind: fundamento
+epistemic_status: mixed
+updated: 2026-08-30
+---
+
+# Outra fisica
+
+[[Nota fisica]] <!-- relation:related -->
+""",
+        encoding="utf-8",
+    )
+    (root / "Dados" / "Nota cruzada.md").write_text(
+        """---
+title: Nota cruzada
+domain: dados
+kind: fundamento
+epistemic_status: mixed
+updated: 2026-08-30
+---
+
+# Nota cruzada
+
+[[Nota fisica]] <!-- relation:related -->
+""",
+        encoding="utf-8",
+    )
+    generated = TaskGenerator(
+        CorpusReader(root),
+        quorum_root=tmp_path / "runtime" / "quorum",
+        models_root=tmp_path / "runtime" / "modelos",
+    ).generate()
+    ilhas = [c for c in generated if c.origin is TaskOrigin.ISOLATED_NOTE]
+    entidades = {c.corpus_entity for c in ilhas}
+    assert "Fisica/Nota fisica.md" in entidades
+    assert "Fisica/Outra fisica.md" in entidades
+    assert "Dados/Nota cruzada.md" not in entidades
+    assert all(c.metadata.get("inter_domain") == 0 for c in ilhas)
+    assert all(c.metadata.get("lock_targets") is True for c in ilhas)
+    assert "DOI" in ilhas[0].objective and "ISBN" in ilhas[0].objective
+    assert "Não use create" in ilhas[0].objective
+    assert "relation:TIPO" in ilhas[0].objective
+    assert "[[Stem]] <!-- relation:TIPO -->" in ilhas[0].objective
+    assert "[[Nota cruzada]]" in ilhas[0].objective
+    assert "Wikilink sem relation:" in ilhas[0].objective
+
+
 def test_generator_deriva_defeito_de_conteudo(tmp_path: Path) -> None:
     reader = _write_corpus(tmp_path / "knowledge")
     (tmp_path / "knowledge" / "Dados" / "Nota quebrada.md").write_text(

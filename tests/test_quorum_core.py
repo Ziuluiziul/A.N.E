@@ -358,6 +358,13 @@ def test_painel_recusa_autoavaliacao_endpoint_duplicado_e_monocultura() -> None:
     ]
     with pytest.raises(ValidationError, match="dois provedores"):
         Panel(task=valid.task, proposal=valid.proposal, members=mono)
+    mesma_familia = [
+        member("groq", "a-llama", "llama", "verificador-factual"),
+        member("nvidia", "b-llama", "llama", "critico-epistemologico"),
+        member("google", "c-llama", "llama", "revisor-estrutural"),
+    ]
+    formado = Panel(task=valid.task, proposal=valid.proposal, members=mesma_familia)
+    assert {membro.family for membro in formado.members} == {"llama"}
 
 
 def test_maioria_aprova_sem_ponderar_confianca() -> None:
@@ -805,3 +812,22 @@ def test_dois_objetos_validos_na_mesma_resposta_sao_ambiguos() -> None:
             expected_proposal_id=proposal_id,
             expected_base_commit=base,
         )
+
+
+def test_painel_aceita_familia_unica_com_dois_provedores() -> None:
+    proposer = member("nvidia", "proposal-model", "llama", "proponente")
+    reviewers = [
+        member("google", "fact-model", "llama", "verificador-factual"),
+        member("nvidia", "critical-model", "llama", "critico-epistemologico"),
+        member("nous", "structure-model", "llama", "revisor-estrutural"),
+    ]
+    target = Panel(
+        task=PanelTask(kind="teste", prompt="avalie a proposição"),
+        proposal=Proposal(proposer=proposer, final_response="proposta final"),
+        members=reviewers,
+    )
+    add_votes(target, "approve", "approve", "approve")
+    decision = decide_panel(target)
+    assert decision.outcome.value == "promote"
+    assert decision.family_count == 1
+    assert decision.provider_count == 3
