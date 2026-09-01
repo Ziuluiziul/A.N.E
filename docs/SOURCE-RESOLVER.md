@@ -5,8 +5,7 @@ resolução externa. Não é código de ciclo 2 — esse código ainda não
 existe neste dump. Não inventa path (`/v2/isbn` e afins). Endpoints
 abaixo foram copiados da página oficial, não de memória.
 
-Auditoria que exercitou o caso ouro ISBN:
-[audits/2026-08-30-ciclo-1](audits/2026-08-30-ciclo-1/).
+O caso ouro ISBN foi exercitado em 2026-08-30 (HEAD `27d4bdd`). O relatório dessa passagem não faz parte da superfície do produto.
 
 | Identificador | Resolver | Endpoint canônico (copiado da página) | Doc oficial |
 | --- | --- | --- | --- |
@@ -22,8 +21,7 @@ Auditoria que exercitou o caso ouro ISBN:
 
 **Godfrey-Smith = caso ouro.** Três âncoras, nenhuma no corpus: o teste
 de promoção (`tests/test_promotion.py:382-387`, recusa se o
-identificador some), a resolução Open Library de 2026-08-30 (resposta
-em [audits/2026-08-30-ciclo-1](audits/2026-08-30-ciclo-1/)), e a cota
+identificador some), a resolução Open Library de 2026-08-30, e a cota
 de 0 ocorrências no dump `knowledge/` na mesma data.
 
 **Sem rede = skip, nunca approve.** Resolução que falha, estoura o

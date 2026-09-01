@@ -1,7 +1,7 @@
 # Documentação do A.N.E.
 
 Este diretório guarda decisões de arquitetura, o guia do Workspace e as
-specs de provedor, SSE, worker e X MCP.
+specs de provedor, SSE e worker.
 Não é diário de sessões, nem arquivo de handoffs.
 
 | Documento | Papel |
@@ -17,12 +17,9 @@ Não é diário de sessões, nem arquivo de handoffs.
 | [PROVEDORES.md](PROVEDORES.md) | google, groq, nvidia: página oficial versus o que o vault declara |
 | [ATLAS-SSE.md](ATLAS-SSE.md) | Contrato HTTP SSE do tecido runtime (não MongoDB Atlas) |
 | [WORKER.md](WORKER.md) | `VAULT_AUTONOMOUS_WORKER`: quem spawna, default, teto de chamadas |
-| [X-MCP.md](X-MCP.md) | Plugin Cursor / Grok Bot; não é contrato do vault |
 | [SOURCE-RESOLVER.md](SOURCE-RESOLVER.md) | Contrato DOI/arXiv/ISBN; skip sem rede |
-| [audits/2026-08-30-ciclo-1/](audits/2026-08-30-ciclo-1/) | ciclo 1 (HEAD `27d4bdd`); promotes + ISBN fora do corpus |
 
-Este diretório não é diário de sessões. Handoff, CICLO e PROMPT ficam fora
-do índice. Docs não promovem handoff a spec.
+Este diretório não é diário de sessões. Handoff, ciclo, prompt e auditoria de
+sessão não fazem parte do produto público. Docs não promovem handoff a spec.
 
-Registros estruturados de auditoria do produto ficam em `audits/`.
 O corpus e a política editorial moram em `knowledge/`, nunca aqui.

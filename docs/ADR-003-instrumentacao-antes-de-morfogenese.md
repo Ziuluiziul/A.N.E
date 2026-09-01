@@ -5,7 +5,8 @@
 (proposta e revisão), com o mantenedor arbitrando.
 **Origem:** crítica de Anirban Bandyopadhyay ao Graph Engineering
 (https://x.com/anirbanbandyo/status/2088425573102317600).
-**Evidência:** `docs/FRENTE-MORFOGENICA-2026-08-14.md` e o pacote que o acompanha.
+**Evidência:** frente morfogênica de 2026-08-14 (arquivo interno, fora da
+superfície do produto) e o pacote que a acompanha.
 
 ## Contexto
 
