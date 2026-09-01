@@ -117,6 +117,21 @@ describe('resumo visível da atividade', () => {
     expect(view.meta).toContain('1 falha recente');
   });
 
+  it('não despeja ISO do last_cycle no rodapé do cartão', () => {
+    const view = describeLiveActivity(
+      snapshot(event(1, 'call_completed', { provider: 'groq', endpoint: 'qwen' })),
+      source({
+        operation: {
+          ...operation,
+          lastCycle: '2026-09-01T04:47:19+00:00',
+        },
+      }),
+      Date.parse('2026-08-11T22:01:00.000Z'),
+    );
+    expect(view.meta).not.toContain('2026-09-01T');
+    expect(view.meta).toMatch(/ciclo \d{2}:\d{2}:\d{2}/);
+  });
+
   it('mantém a chegada acesa por uma janela finita', () => {
     const start = Date.parse('2026-08-11T22:00:00.000Z');
     const view = describeLiveActivity(

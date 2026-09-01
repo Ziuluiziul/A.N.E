@@ -34,6 +34,8 @@ main,
 
 #stage canvas {
   display: block;
+  /* Sem isto o navegador come a pinça (zoom da página) e o OrbitControls não vê. */
+  touch-action: none;
 }
 
 /*
@@ -551,8 +553,7 @@ main,
   cursor: default;
 }
 
-.activity-status strong,
-.activity-status small {
+.activity-status strong {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -629,6 +630,9 @@ main,
 .activity-status small {
   color: #9aabba;
   font: 11px/1.4 ui-monospace, 'Cascadia Code', 'Source Code Pro', monospace;
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: anywhere;
 }
 
 .activity-status[data-state='active'] {
@@ -687,6 +691,24 @@ main,
 
 /* Alcançável por leitor de tela e pela busca do navegador; fora da composição
    visual. `display: none` a esconderia das duas coisas. */
+.skip-link {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 20;
+  padding: 6px 10px;
+  color: var(--text);
+  text-decoration: none;
+  background: #151b23;
+  border: 1px solid #78c8df;
+  border-radius: 6px;
+  transform: translateY(-160%);
+}
+
+.skip-link:focus {
+  transform: none;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -747,6 +769,12 @@ main,
 
 .modo-texto summary {
   cursor: pointer;
+}
+
+.modo-texto summary:focus-visible,
+.modo-texto input[type='search']:focus-visible {
+  outline: 2px solid #9de9fa;
+  outline-offset: 2px;
 }
 
 .modo-texto dl {

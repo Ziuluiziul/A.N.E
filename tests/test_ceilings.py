@@ -7,6 +7,7 @@ from types import SimpleNamespace
 from providers.aptitude import classify
 from providers.base import ModelInfo
 from providers.inventory import EndpointProfile, Inventory
+from providers.registry import EndpointRecord
 from tools.run_worker import plan_worker_limits
 from vault.work.ceilings import (
     MINUTE_PER_DAY,
@@ -114,6 +115,21 @@ def test_sem_teto_documentado_permanece_o_sandbox() -> None:
     assert effective_max_calls(6, None) == 6
 
 
+def test_env_diario_nao_vaza_para_o_orcamento_da_execucao() -> None:
+    """VAULT_WORK_MAX_CALLS copiado do RPD não vira 'chamadas por execução'."""
+    modelos = [
+        SimpleNamespace(
+            provider="groq",
+            endpoint_id="llama-3.1-8b",
+            declared_limits={"requests_per_minute": 30, "requests_per_day": 1_000},
+        )
+    ]
+    teto = ceilings_from_declared(modelos)
+    assert effective_max_calls(91_020, teto) == 30
+    assert effective_max_calls(91_020, teto) != 91_020
+    assert effective_max_calls(91_020, teto) != 1_000
+
+
 def _inventario_groq(*, rpm: int, rpd: int | None) -> Inventory:
     limits: dict[str, int] = {"requests_per_minute": rpm}
     if rpd is not None:
@@ -127,7 +143,16 @@ def _inventario_groq(*, rpm: int, rpd: int | None) -> Inventory:
     )
     aptitude = classify(model)
     assert aptitude.eligible
-    return Inventory(profiles=[EndpointProfile(aptitude=aptitude, model=model)])
+    registro = EndpointRecord(
+        provider="groq",
+        endpoint_id="llama-3.1-8b",
+        observed_status="ok",
+        last_success="2026-09-01T00:00:00+00:00",
+        probes=1,
+    )
+    return Inventory(
+        profiles=[EndpointProfile(aptitude=aptitude, model=model, record=registro)]
+    )
 
 
 def test_worker_max_calls_usa_rpm_do_pool() -> None:
@@ -165,7 +190,16 @@ def _inventario_nvidia() -> Inventory:
     )
     aptitude = classify(model)
     assert aptitude.eligible
-    return Inventory(profiles=[EndpointProfile(aptitude=aptitude, model=model)])
+    registro = EndpointRecord(
+        provider="nvidia",
+        endpoint_id="deepseek-ai/deepseek-v4-flash-0731",
+        observed_status="ok",
+        last_success="2026-09-01T00:00:00+00:00",
+        probes=1,
+    )
+    return Inventory(
+        profiles=[EndpointProfile(aptitude=aptitude, model=model, record=registro)]
+    )
 
 
 def test_worker_max_calls_nao_usa_nvidia_diaria() -> None:

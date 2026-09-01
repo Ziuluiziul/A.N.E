@@ -31,8 +31,9 @@ export const SCENE_LEGEND = [
   // fossem dois gestos com dois efeitos. São dois caminhos para o mesmo.
   { keys: 'duplo clique · Enter', action: 'aproximar da escolha' },
   { keys: 'arrastar', action: 'girar' },
-  { keys: 'scroll', action: 'aproximar e afastar' },
+  { keys: 'scroll · pinça', action: 'aproximar e afastar' },
   { keys: 'WASD', action: 'andar' },
-  { keys: 'Esc', action: 'soltar a escolha' },
+  { keys: '/ · Ctrl+K', action: 'buscar uma entidade' },
+  { keys: 'Esc', action: 'fechar a legenda ou soltar a escolha' },
   { keys: 'G', action: 'reenquadrar tudo' },
 ] as const;

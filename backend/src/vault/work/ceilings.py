@@ -109,11 +109,14 @@ def merge_provider_caps(
 def effective_max_calls(work_max_calls: int, teto: WorkCeilings | None) -> int:
     """Orçamento da execução: RPM simultâneo do pool, nunca o diário nem ×1440.
 
-    O cartão do Atlas e o worker leem o mesmo número:
-    max(work_max_calls, simultaneous). NVIDIA 40 RPM fica 40, não 40×1440.
-    Sem RPM declarado, permanece o piso do processo (6 no default).
+    Zero é pausa explícita. Sem RPM documentado, permanece o piso do processo
+    (6 no default). Com RPM, o sandbox sobe até ele — e um
+    ``VAULT_WORK_MAX_CALLS`` copiado do RPD (91020 nesta máquina) não vaza
+    para o cartão: NVIDIA 40 RPM fica 40, não 40×1440.
     """
     piso = max(0, work_max_calls)
-    if teto is None:
+    if piso == 0:
+        return 0
+    if teto is None or teto.simultaneous <= 0:
         return piso
-    return max(piso, teto.simultaneous)
+    return teto.simultaneous

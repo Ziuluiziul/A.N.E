@@ -9,6 +9,8 @@
 // leitura, como todo o resto do visualizador.
 
 import { loadNoteDocument, type Projection, type ProjectionEdge, type ProjectionNode } from './contract';
+import { isEditableTarget } from './keyboardTarget';
+import { documentLines } from './noteDocument';
 
 const TIPOS: Record<ProjectionNode['kind'], string> = {
   note: 'nota',
@@ -62,6 +64,30 @@ export async function carregarCorpoTextual(
   return load(referencia);
 }
 
+/** Markdown da nota, já resolvido para leitura — a mesma transformação da placa 3D. */
+export function corpoTextualVisivel(markdown: string, title?: string): string {
+  return documentLines(markdown, { title }).map((linha) => linha.text).join('\n');
+}
+
+export type AtalhoTextual = 'focus-search' | 'clear-search' | null;
+
+/**
+ * Gramática do modo textual: `/` e Ctrl+K abrem a busca; Escape a limpa.
+ *
+ * Sem isto, `?texto=1` é um índice clicável. Com isto, teclado chega na nota
+ * sem passar pelo 3D.
+ */
+export function atalhoDoModoTextual(
+  key: string,
+  target: EventTarget | null,
+  ctrlOrMeta = false,
+): AtalhoTextual {
+  if (key === 'Escape') return 'clear-search';
+  if (isEditableTarget(target)) return null;
+  if (key === '/' || (ctrlOrMeta && (key === 'k' || key === 'K'))) return 'focus-search';
+  return null;
+}
+
 function vizinhas(projection: Projection, id: string): ProjectionEdge[] {
   return projection.edges.filter(
     (edge) => edge.kind !== 'aggregated' && (edge.source === id || edge.target === id),
@@ -88,6 +114,11 @@ export function montarModoTextual(
 
   container.replaceChildren();
   container.classList.add('modo-texto');
+
+  const pular = document.createElement('a');
+  pular.className = 'skip-link';
+  pular.href = '#busca';
+  pular.textContent = 'Ir à busca';
 
   const cabecalho = document.createElement('header');
   const titulo = document.createElement('h1');
@@ -214,7 +245,8 @@ export function montarModoTextual(
         corpo.textContent = 'Carregando documento…';
         void carregarCorpoTextual(node)
           .then((texto) => {
-            corpo.textContent = texto ?? '';
+            corpo.textContent =
+              texto === null || texto === '' ? '' : corpoTextualVisivel(texto, node.title);
           })
           .catch((erro: unknown) => {
             corpo.textContent = `Documento indisponível: ${String(erro)}`;
@@ -243,5 +275,29 @@ export function montarModoTextual(
   busca.addEventListener('input', filtrar);
   filtrar();
 
-  container.append(cabecalho, rotuloBusca, busca, contagem, lista);
+  const noTeclado = (evento: KeyboardEvent) => {
+    const acao = atalhoDoModoTextual(
+      evento.key,
+      evento.target,
+      evento.ctrlKey || evento.metaKey,
+    );
+    if (acao === 'focus-search') {
+      evento.preventDefault();
+      busca.focus();
+      busca.select();
+      return;
+    }
+    if (acao === 'clear-search' && document.activeElement === busca) {
+      if (busca.value !== '') {
+        busca.value = '';
+        filtrar();
+      } else {
+        busca.blur();
+      }
+      evento.preventDefault();
+    }
+  };
+  document.addEventListener('keydown', noTeclado);
+
+  container.append(pular, cabecalho, rotuloBusca, busca, contagem, lista);
 }

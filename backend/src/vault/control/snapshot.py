@@ -191,12 +191,19 @@ def concurrency_ceiling(role_max: int, budget_calls: int) -> int:
 
 
 def teto_do_inventario(inventory: Inventory | None) -> WorkCeilings | None:
-    """O mesmo caminho de teto que o worker usa. Sem catálogo, não há pool."""
-    if inventory is None or not inventory.profiles:
+    """Teto do pool que o AUTO realmente chama, não do catálogo inteiro.
+
+    Somar RPM de preview/alias e de modelo nunca sondado inflava o cartão
+    para dezenas de milhares de "chamadas por execução".
+    """
+    if inventory is None:
+        return None
+    usaveis = inventory.for_work()
+    if not usaveis:
         return None
     return ceilings_from_declared(
-        (profile.model for profile in inventory.profiles),
-        eligible=(profile.aptitude.eligible for profile in inventory.profiles),
+        (profile.model for profile in usaveis),
+        eligible=(True for _ in usaveis),
     )
 
 
@@ -217,7 +224,6 @@ def _resolve_endpoint(
     if inventory is None:
         return None, "indisponivel", "catálogo de endpoints indisponível"
     if auto:
-        # A política canônica é a ordem de preferência que o inventário já aplica.
         usaveis = inventory.for_work()
         if not usaveis:
             return None, "indisponivel", "nenhum endpoint utilizável no catálogo"
@@ -234,6 +240,33 @@ def _resolve_endpoint(
     return escolhidos[0], "manual", "escolha manual"
 
 
+def _auto_pool(
+    inventory: Inventory | None, n: int
+) -> list[tuple[EndpointProfile | None, str, str]]:
+    """O AUTO do painel mostra o pool, não sete vezes o primeiro do ranking.
+
+    O orquestrador espalha papéis por provedor distinto; pintar todo trabalhador
+    com ``for_work()[0]`` fazia o Atlas jurar que só existia um SKU.
+    """
+    if inventory is None:
+        return [(None, "indisponivel", "catálogo de endpoints indisponível")] * n
+    usaveis = inventory.for_work()
+    if not usaveis:
+        return [(None, "indisponivel", "nenhum endpoint utilizável no catálogo")] * n
+    distintos: list[EndpointProfile] = []
+    vistos: set[str] = set()
+    for profile in usaveis:
+        if profile.provider in vistos:
+            continue
+        distintos.append(profile)
+        vistos.add(profile.provider)
+    ordered = [*distintos, *[p for p in usaveis if p not in distintos]]
+    return [
+        (ordered[i % len(ordered)], "auto", "resolvido pela política canônica")
+        for i in range(n)
+    ]
+
+
 def _workers(
     preferences: ControlPreferences,
     inventory: Inventory | None,
@@ -241,17 +274,24 @@ def _workers(
     budget_calls: int,
 ) -> list[WorkerState]:
     linhas: list[WorkerState] = []
+    papeis = list(ROLES.values())
+    auto_pool = (
+        _auto_pool(inventory, len(papeis)) if preferences.auto else None
+    )
     # `enumerate` na mesma ordem de `ROLES`, que é a que a projeção operacional usa para
     # escolher a cor do produtor. Ordem diferente aqui daria outro token para a mesma
     # entidade, e o gate de paridade da ADR-005 acusaria diferença de identidade visual.
-    for ordem, role in enumerate(ROLES.values()):
+    for ordem, role in enumerate(papeis):
         preferencia = preferences.for_worker(role.name)
-        profile, resolvido_por, detalhe = _resolve_endpoint(
-            inventory,
-            preferences.auto,
-            preferencia.provider,
-            preferencia.endpoint_id,
-        )
+        if auto_pool is not None:
+            profile, resolvido_por, detalhe = auto_pool[ordem]
+        else:
+            profile, resolvido_por, detalhe = _resolve_endpoint(
+                inventory,
+                False,
+                preferencia.provider,
+                preferencia.endpoint_id,
+            )
         teto = concurrency_ceiling(role.max_concurrency, budget_calls)
         # Sem preferência declarada, o efetivo é o teto do papel sob AUTO e zero sem
         # ele: ligar trabalho por omissão seria decidir no lugar do mantenedor.
@@ -294,11 +334,28 @@ def _workers(
     return linhas
 
 
+def _carregar_fila(
+    settings: Settings,
+) -> tuple[Any | None, str | None]:
+    """Uma leitura da fila. ``None, None`` = arquivo ainda não existe."""
+    caminho = settings.state_dir / "autonomy" / "tasks.json"
+    if not caminho.exists():
+        return None, None
+    try:
+        return PersistentTaskQueue(caminho).snapshot(), None
+    except Exception as error:  # noqa: BLE001 — a fila não pode derrubar o painel
+        return None, f"fila ilegível: {type(error).__name__}"
+
+
 def _operation(
     settings: Settings,
     preferences: ControlPreferences,
     workers: list[WorkerState],
     budget_calls: int,
+    *,
+    fila_snapshot: Any | None = None,
+    fila_erro: str | None = None,
+    fila_lida: bool = False,
 ) -> tuple[OperationState, dict[str, int]]:
     indisponivel: dict[str, str] = {}
     fila: int | None = None
@@ -307,37 +364,41 @@ def _operation(
     falhas: list[str] = []
     por_papel: dict[str, int] = {}
 
-    caminho = settings.state_dir / "autonomy" / "tasks.json"
-    if caminho.exists():
-        try:
-            snapshot = PersistentTaskQueue(caminho).snapshot()
-        except Exception as error:  # noqa: BLE001 — a fila não pode derrubar o painel
-            indisponivel["queued"] = f"fila ilegível: {type(error).__name__}"
-        else:
-            fila = sum(1 for task in snapshot.tasks if task.state is TaskState.QUEUED)
-            ativas = [
-                task
-                for task in snapshot.tasks
-                if task.state in (TaskState.RUNNING, TaskState.ASSIGNED)
-            ]
-            rodando = len(ativas)
-            for task in ativas:
-                for papel in task.required_roles:
-                    por_papel[papel] = por_papel.get(papel, 0) + 1
-            marcas = [
-                attempt.finished_at or attempt.started_at
-                for task in snapshot.tasks
-                for attempt in task.attempts
-            ]
-            ultimo_ciclo = max(marcas) if marcas else None
-            if ultimo_ciclo is None:
-                indisponivel["last_cycle"] = "nenhuma tentativa registrada ainda"
-            falhas = [
-                f"{task.id}: {task.attempts[-1].detail or task.state.value}"
-                for task in snapshot.tasks
-                if task.state in (TaskState.BLOCKED, TaskState.REJECTED) and task.attempts
-            ][:5]
+    if fila_lida:
+        snapshot = fila_snapshot
+        erro = fila_erro
+        existe = snapshot is not None or erro is not None
     else:
+        snapshot, erro = _carregar_fila(settings)
+        existe = (settings.state_dir / "autonomy" / "tasks.json").exists()
+
+    if erro is not None:
+        indisponivel["queued"] = erro
+    elif snapshot is not None:
+        fila = sum(1 for task in snapshot.tasks if task.state is TaskState.QUEUED)
+        ativas = [
+            task
+            for task in snapshot.tasks
+            if task.state in (TaskState.RUNNING, TaskState.ASSIGNED)
+        ]
+        rodando = len(ativas)
+        for task in ativas:
+            for papel in task.required_roles:
+                por_papel[papel] = por_papel.get(papel, 0) + 1
+        marcas = [
+            attempt.finished_at or attempt.started_at
+            for task in snapshot.tasks
+            for attempt in task.attempts
+        ]
+        ultimo_ciclo = max(marcas) if marcas else None
+        if ultimo_ciclo is None:
+            indisponivel["last_cycle"] = "nenhuma tentativa registrada ainda"
+        falhas = [
+            f"{task.id}: {task.attempts[-1].detail or task.state.value}"
+            for task in snapshot.tasks
+            if task.state in (TaskState.BLOCKED, TaskState.REJECTED) and task.attempts
+        ][:5]
+    elif not existe:
         motivo = "a fila autônoma ainda não foi criada; rode `make worker`"
         indisponivel["queued"] = motivo
         indisponivel["last_cycle"] = motivo
@@ -446,12 +507,28 @@ def _assemble_snapshot(
     notices = [motivo_catalogo] if motivo_catalogo else []
     budget_calls = execution_budget(settings, inventory)
 
-    # Duas passagens: a primeira precisa da contagem por papel, que vem da fila; a
-    # segunda precisa dos trabalhadores, que dependem da contagem. Montar a operação
-    # com a lista vazia e refazê-la é mais barato que inverter a dependência.
-    _, por_papel = _operation(settings, preferences, [], budget_calls)
+    fila_snapshot, fila_erro = _carregar_fila(settings)
+    # Duas passagens sobre o **mesmo** retrato: a primeira precisa da contagem por
+    # papel; a segunda, dos trabalhadores. Relê o disco uma vez, não duas.
+    _, por_papel = _operation(
+        settings,
+        preferences,
+        [],
+        budget_calls,
+        fila_snapshot=fila_snapshot,
+        fila_erro=fila_erro,
+        fila_lida=True,
+    )
     workers = _workers(preferences, inventory, por_papel, budget_calls)
-    operation, _ = _operation(settings, preferences, workers, budget_calls)
+    operation, _ = _operation(
+        settings,
+        preferences,
+        workers,
+        budget_calls,
+        fila_snapshot=fila_snapshot,
+        fila_erro=fila_erro,
+        fila_lida=True,
+    )
 
     return ControlSnapshot(
         providers=_providers(settings, inventory, cobertos, motivo_catalogo),

@@ -80,6 +80,18 @@ export interface LiveActivityView {
   expiresAt: number | null;
 }
 
+function cicloVisivel(value: string): string {
+  // O snapshot entrega ISO; o cartão pedia texto curto e acabava cortando o orçamento.
+  if (!/T\d{2}:\d{2}/.test(value)) return value;
+  const moment = new Date(value);
+  if (!Number.isFinite(moment.getTime())) return value;
+  return moment.toLocaleTimeString('pt-BR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+}
+
 function compact(value: string, maxLength = 150): string {
   const singleLine = value.replace(/\s+/g, ' ').trim();
   return singleLine.length <= maxLength
@@ -130,7 +142,7 @@ function metaOf(snapshot: RuntimeSnapshot, source: LiveActivitySource): string {
     parts.push(source.operation.budget);
   }
   if (source.controlFreshness === 'fresh' && source.operation?.lastCycle) {
-    parts.push(`ciclo ${source.operation.lastCycle}`);
+    parts.push(`ciclo ${cicloVisivel(source.operation.lastCycle)}`);
   }
   if (source.controlFreshness === 'fresh' && source.operation?.nextRun) {
     parts.push(`próxima ${source.operation.nextRun}`);

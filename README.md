@@ -63,7 +63,7 @@ corpus e runtime estão vivos, reconectando ou em modo offline.
 
 | Ação | Como |
 | --- | --- |
-| Girar / aproximar | arrastar / rolar |
+| Girar / aproximar | arrastar / rolar; pinça no toque |
 | Andar | `W` `A` `S` `D` |
 | Selecionar | clique parado sobre a entidade |
 | Recentrar a câmera | duplo clique, ou `Enter` com algo selecionado |

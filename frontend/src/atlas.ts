@@ -99,6 +99,10 @@ import {
 } from './textPool';
 import { createRuntimeLayer } from './runtimeLayer';
 import { BASE_RADIUS } from './sizing';
+import {
+  LIMITE_DE_APROXIMACAO_MINIMO,
+  distanciaMinimaDaOrbita,
+} from './cameraLimits';
 
 /**
  * Ordem de desenho. Halo atrás, arestas do foco junto das placas, texto por cima.
@@ -172,18 +176,6 @@ const AMPLITUDE_DO_HALO = 0.08;
 
 /** Unidades de mundo roladas por unidade de `deltaY` da roda. */
 const PASSO_DE_ROLAGEM = 0.012;
-
-/** Piso absoluto da aproximação, para um alvo minúsculo não permitir chegar a zero. */
-const LIMITE_DE_APROXIMACAO_MINIMO = 12;
-
-/**
- * Folga sobre a distância em que o alvo exatamente preenche a janela útil.
- *
- * Baixou de 1,15 para 1,02: o limite existe para o painel não ser recortado, e 15% de
- * margem era mais do que isso exige — sobrava moldura vazia justamente quando se quer
- * chegar perto para ler.
- */
-const FOLGA_DE_APROXIMACAO = 1.02;
 
 /** Quanto o refino em espaço de tela pode afastar além do que a conta de mundo pediu. */
 const TETO_DO_REFINO = 1.35;
@@ -1195,13 +1187,12 @@ export function createAtlas(
       : slot
         ? BASE_RADIUS[slot.kind] * 2
         : 0;
-    const altura = renderer.domElement.clientHeight || container.clientHeight || 720;
-    const larguraUtil = renderer.domElement.clientWidth || container.clientWidth || 1280;
-    const tanV = Math.tan((camera.fov * Math.PI) / 360);
-    const tanH = tanV * (larguraUtil / altura);
-    // A distância em que o alcance cabe no menor dos dois semi-eixos da janela útil.
-    const cabe = Math.max(alcance / 2 / tanV, alcance / 2 / tanH) * FOLGA_DE_APROXIMACAO;
-    orbit.minDistance = Math.max(LIMITE_DE_APROXIMACAO_MINIMO, cabe);
+    orbit.minDistance = distanciaMinimaDaOrbita({
+      alcance,
+      fovDeg: camera.fov,
+      width: renderer.domElement.clientWidth || container.clientWidth || 1280,
+      height: renderer.domElement.clientHeight || container.clientHeight || 720,
+    });
   }
 
   /**

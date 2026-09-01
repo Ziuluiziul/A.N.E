@@ -202,10 +202,13 @@ def _effective_concurrency(*, requested: int, max_calls: int) -> int:
 
 
 def _teto_documentado(inventory: Inventory) -> WorkCeilings:
-    """RPM/RPD declarados viram cap em voo e orçamento do dia. Sem número, some zero."""
+    """RPM do pool de trabalho, não do catálogo inteiro."""
+    usaveis = inventory.for_work()
+    if not usaveis:
+        return ceilings_from_declared((), eligible=())
     return ceilings_from_declared(
-        (profile.model for profile in inventory.profiles),
-        eligible=(profile.aptitude.eligible for profile in inventory.profiles),
+        (profile.model for profile in usaveis),
+        eligible=(True for _ in usaveis),
     )
 
 

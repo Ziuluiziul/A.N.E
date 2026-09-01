@@ -34,6 +34,7 @@ from vault.control.credentials import (
 )
 from vault.control.preferences import ControlPreferences, PreferenceStore, WorkerPreference
 from vault.control.snapshot import (
+    _auto_pool,
     build_snapshot,
     clear_control_snapshot_cache,
     concurrency_ceiling,
@@ -414,7 +415,7 @@ class TestSnapshot:
         monkeypatch.setattr("vault.control.snapshot.PersistentTaskQueue.snapshot", contar)
         prefs = ControlPreferences()
         primeiro = build_snapshot(settings, prefs)
-        assert chamadas["n"] >= 1
+        assert chamadas["n"] == 1
         n_depois_da_montagem = chamadas["n"]
         segundo = build_snapshot(settings, prefs)
         assert chamadas["n"] == n_depois_da_montagem
@@ -432,6 +433,47 @@ class TestSnapshot:
         quarto = build_snapshot(settings, prefs)
         assert quarto is not primeiro
         assert chamadas["n"] > n_depois_do_apertado
+
+    def test_auto_espalha_provedores_no_cartao(self) -> None:
+        """O Atlas não pode jurar que sete papéis usam o mesmo SKU."""
+        from providers.base import ProbeResult
+        from providers.catalog import DiscoverySnapshot
+        from providers.inventory import build_inventory
+        from providers.registry import EndpointRegistry
+        from vault.work.roles import ROLES
+
+        def snap(provider: str, endpoint: str) -> DiscoverySnapshot:
+            return DiscoverySnapshot(
+                path=Path(f"models-{provider}.json"),
+                models=[
+                    ModelInfo(
+                        provider=provider,
+                        endpoint_id=endpoint,
+                        family=provider,
+                        available=True,
+                        context_window=8192,
+                        capabilities=["generateContent"],
+                    )
+                ],
+            )
+
+        registry = EndpointRegistry()
+        registry.record_probe(ProbeResult("groq", "qwen/qwen3.6-27b", "ok", "ok", 1))
+        registry.record_probe(
+            ProbeResult("nvidia", "meta/llama-3.3-70b-instruct", "ok", "ok", 1)
+        )
+        inventory = build_inventory(
+            {
+                "groq": snap("groq", "qwen/qwen3.6-27b"),
+                "nvidia": snap("nvidia", "meta/llama-3.3-70b-instruct"),
+            },
+            registry,
+        )
+        pool = _auto_pool(inventory, len(ROLES))
+        provedores = {profile.provider for profile, _, _ in pool if profile is not None}
+        assert provedores == {"groq", "nvidia"}
+        assert pool[0][0] is not None and pool[1][0] is not None
+        assert pool[0][0].provider != pool[1][0].provider
 
     def test_ausencia_tem_motivo_e_nunca_vira_zero(self, tmp_path: Path, secrets: Path) -> None:
         settings = settings_de_teste(tmp_path, secrets)
@@ -624,9 +666,20 @@ class TestSnapshot:
                 }
             )
         )
+        from providers.base import ProbeResult
+        from providers.registry import EndpointRegistry
+        from vault.runtime_io import write_private_json
+
+        registry = EndpointRegistry()
+        registry.record_probe(ProbeResult("groq", "llama-3.1-8b", "ok", "ok", 1))
+        write_private_json(state / "endpoints.json", registry.to_dict())
         snapshot = build_snapshot(settings, ControlPreferences())
         assert snapshot.operation.budget == "30 chamadas por execução"
         assert "6 chamadas" not in snapshot.operation.budget
+        inflado = settings.model_copy(update={"work_max_calls": 91_020})
+        assert build_snapshot(inflado, ControlPreferences()).operation.budget == (
+            "30 chamadas por execução"
+        )
         verificador = next(w for w in snapshot.workers if w.id == "verificador-factual")
         assert verificador.concurrency_max == 3
         assert concurrency_ceiling(3, 30) == 3

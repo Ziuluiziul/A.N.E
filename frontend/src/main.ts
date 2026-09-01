@@ -1,7 +1,7 @@
 // Ponto de entrada: carrega a projeção, monta o Atlas e mantém a camada acessível.
 //
 // Credencial e trabalhador moram na placa. AUTO é o círculo `A` ao lado do `?`.
-// O resumo da operação mora no cartão. Esc só solta a escolha.
+// O resumo da operação mora no cartão. Esc fecha a legenda, depois solta a escolha.
 
 import './style.css';
 
@@ -31,6 +31,7 @@ import { buildSceneLegend } from './sceneLegend';
 import { controlId } from './dock';
 import { emptyDockData, type DockData } from './dockModel';
 import { modoTextualPedido, montarModoTextual, webglDisponivel } from './fallback';
+import { isEditableTarget } from './keyboardTarget';
 import { describeLiveActivity, type LiveActivityStream } from './liveActivity';
 import { composeLayout } from './composeLayout';
 import {
@@ -263,6 +264,21 @@ legendaBotao.addEventListener(
     alternarLegenda(legendaBotao.getAttribute('aria-expanded') !== 'true');
   },
   { signal: cicloAplicacao.signal },
+);
+
+window.addEventListener(
+  'keydown',
+  (evento) => {
+    if (evento.key !== 'Escape') return;
+    if (isEditableTarget(evento.target)) return;
+    if (legendaBotao.getAttribute('aria-expanded') !== 'true') return;
+    // A paleta de busca já consome Esc no próprio campo. Aqui a legenda é o
+    // overlay visível: um Escape a fecha sem soltar a escolha da cena.
+    alternarLegenda(false);
+    evento.preventDefault();
+    evento.stopImmediatePropagation();
+  },
+  { capture: true, signal: cicloAplicacao.signal },
 );
 
 const CONNECTION_LABEL: Record<ConnectionPhase, string> = {
@@ -757,19 +773,6 @@ async function iniciar(): Promise<void> {
     preencherAcessibilidade(projection, origin);
     montarLegenda(projection);
 
-    // Quem abre o Atlas pela primeira vez não sabe que a legenda existe; abrir
-    // sozinha na primeira visita custa um clique e ensina a ler a cena. Depois,
-    // fechada é o estado normal — ela responde a uma pergunta que só se faz uma vez.
-    const LEGENDA_JA_VISTA = 'atlas-legenda-vista';
-    if (localStorage.getItem(LEGENDA_JA_VISTA) === null) {
-      alternarLegenda(true);
-      try {
-        localStorage.setItem(LEGENDA_JA_VISTA, '1');
-      } catch {
-        // Armazenamento indisponível: a legenda só deixa de abrir sozinha.
-      }
-    }
-
     // A assinatura acontece somente depois de montar o modo textual ou persistir o
     // layout 3D. Se algo mudou nesse intervalo, o evento `current` traz outro SHA e
     // recarrega; abrir o canal antes poderia interromper a primeira gravação espacial.
@@ -864,11 +867,26 @@ async function iniciar(): Promise<void> {
         `Modo textual: ${projection.meta.counts.notes} entidades, ` +
           `${projection.meta.counts.claims} claims. Use a busca para localizar.`,
       );
-      // Reset de layout continua hidden: no texto não há posição. O A precisa do
-      // snapshot de controle, que no 3D só nascia depois da cena.
+      // Reset de layout continua hidden: no texto não há posição. A legenda 3D
+      // (scroll, pinça, WASD) também não se aplica — cobria a lista na primeira visita.
       ligarPollingDoControle('modo textual');
+      legendaBotao.hidden = true;
+      alternarLegenda(false);
       observarCorpus();
       return;
+    }
+
+    // Quem abre o Atlas 3D pela primeira vez não sabe que a legenda existe; abrir
+    // sozinha na primeira visita custa um clique e ensina a ler a cena. Depois,
+    // fechada é o estado normal — e o modo textual nunca a dispara.
+    const LEGENDA_JA_VISTA = 'atlas-legenda-vista';
+    if (localStorage.getItem(LEGENDA_JA_VISTA) === null) {
+      alternarLegenda(true);
+      try {
+        localStorage.setItem(LEGENDA_JA_VISTA, '1');
+      } catch {
+        // Armazenamento indisponível: a legenda só deixa de abrir sozinha.
+      }
     }
 
     // Memória espacial: o que já foi colocado fica onde estava; só o que é novo é

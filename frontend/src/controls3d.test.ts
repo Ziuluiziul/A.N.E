@@ -28,6 +28,19 @@ describe('a legenda da cena', () => {
     expect(duplo?.action).toMatch(/aproxim/);
     // Zoom é gesto de mouse e não aparece em `CONTROLS`; sem ele a faixa deixaria de
     // fora o movimento que mais se usa.
-    expect(teclas).toContain('scroll');
+    expect(teclas.some((item) => item.includes('scroll'))).toBe(true);
+    expect(teclas.some((item) => item.includes('pinça'))).toBe(true);
+  });
+
+  it('Escape fecha a legenda, não só a escolha', () => {
+    const escape = SCENE_LEGEND.find((item) => item.keys === 'Esc');
+    expect(escape?.action).toMatch(/legenda/);
+    expect(escape?.action).toMatch(/escolha/);
+  });
+
+  it('menciona a busca, que o teclado de fato abre', () => {
+    const teclas = SCENE_LEGEND.map((item) => item.keys);
+    expect(teclas.some((item) => item.includes('Ctrl+K'))).toBe(true);
+    expect(teclas.some((item) => item.includes('/'))).toBe(true);
   });
 });
