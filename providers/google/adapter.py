@@ -38,6 +38,9 @@ from providers.cognitive import CognitiveEvent, CognitiveKind
 from providers.google.limits import declared_limits
 
 PROVIDER = "google"
+# 3.7 Flash e Gemma 4 devolveram 504 DEADLINE_EXCEEDED em ~34 s com teto de 30 s
+# (sonda 2026-08-31). O NIM já espera 60 s pelo mesmo motivo de fila.
+HTTP_TIMEOUT_MS = 60_000
 
 
 class GoogleAdapter:
@@ -50,7 +53,7 @@ class GoogleAdapter:
         self._client = genai.Client(
             api_key=api_key,
             http_options=types.HttpOptions(
-                timeout=30_000,
+                timeout=HTTP_TIMEOUT_MS,
                 retry_options=types.HttpRetryOptions(attempts=1),
             ),
         )

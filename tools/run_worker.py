@@ -90,7 +90,7 @@ def _idle_endpoints(inventory: Any, ledger: Any) -> list[str]:
     cutoff = time.time() - 60.0
     return [
         profile.key
-        for profile in inventory.select(usable=True)
+        for profile in inventory.for_work()
         if not any(at >= cutoff for at, _tokens in ledger.events.get(profile.key, []))
     ]
 

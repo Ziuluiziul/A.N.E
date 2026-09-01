@@ -166,7 +166,7 @@ def plan_batch(
         run_calls=ledger.run_calls,
     )
 
-    disponiveis = inventory.select(usable=True)
+    disponiveis = inventory.for_work()
     plan = Plan()
     if not disponiveis:
         return Plan(
@@ -1051,7 +1051,7 @@ class QuorumOrchestrator:
         condenados = self._hints().unfit
         return [
             profile
-            for profile in self.inventory.select(usable=True)
+            for profile in self.inventory.for_work()
             if profile.provider in self.adapters
             and not self.call_gate.disabled(profile.provider)
             and profile.key not in self._failed_endpoints

@@ -15,10 +15,10 @@ verified_at: 2026-07-16
 A construção de Kaluza–Klein estende a métrica para cinco dimensões com uma coordenada compacta `y ~ y+2πR`. A redução dimensional reorganiza a métrica 5D em um campo gravitacional, um campo vetorial e um campo escalar em 4D. Para um campo periódico `Φ(x,y)=Σ_n φ_n(x)e^{iny/R}`, os modos de Kaluza–Klein possuem massas `m_n² = m_0² + n²/R²`.
 
 ## Compactificação Calabi–Yau
-Uma variedade Calabi–Yau é uma variedade Kähler compacta com primeira classe de Chern nula. Na teoria de cordas, uma threefold Calabi–Yau fornece as seis dimensões internas compactas. O espectro的低能量 dependem da topologia, fluxos e configuração de branas. A estabilização de moduli é um problema técnico necessário para fenomenologia.
+Uma variedade Calabi–Yau é uma variedade Kähler compacta com primeira classe de Chern nula. Na teoria de cordas, uma threefold Calabi–Yau fornece as seis dimensões internas compactas. O espectro de baixa energia depende da topologia, fluxos e configuração de branas. A estabilização de moduli é um problema técnico necessário para fenomenologia.
 
 ## Teoria de Cordas e M-Theory
-A teoria de cordas substitui partículas puntiformes por objetos estendidos unidimensionais. A consistência matemática exige dimensões extras. A M-theory é o framework conjecturado que unifica as five理论 pertubativas como limites de uma estrutura subjacente.
+A teoria de cordas substitui partículas puntiformes por objetos estendidos unidimensionais. A consistência matemática exige dimensões extras. A M-theory é o framework conjecturado que unifica as cinco teorias perturbativas como limites de uma estrutura subjacente.
 
 ## AdS/CFT
 A correspondência AdS/CFT postula uma dualidade entre uma teoria gravitacional/string em espaço anti-de Sitter e uma teoria de campos conforme na fronteira. O exemplo canônico relaciona string tipo IIB em `AdS₅×S⁵` com `N=4` super-Yang–Mills em 4D. A dualidade é estabelecida em limites supersimétricos e `N` grande.

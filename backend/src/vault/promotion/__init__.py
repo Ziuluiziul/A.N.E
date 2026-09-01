@@ -15,7 +15,12 @@ from vault.promotion.code_patch import (
     CodePatchRefused,
     fora_de_alcance,
 )
-from vault.promotion.patch import CorpusPatch, PatchOperation, PatchRefused
+from vault.promotion.patch import (
+    CorpusPatch,
+    PatchOperation,
+    PatchRefused,
+    identifiers_in,
+)
 from vault.promotion.policy import (
     BudgetPolicy,
     BudgetRules,
@@ -56,6 +61,7 @@ __all__ = [
     "CorpusPatch",
     "PatchOperation",
     "PatchRefused",
+    "identifiers_in",
     "PromotionRefused",
     "PromotionResult",
     "ProposalPromoter",

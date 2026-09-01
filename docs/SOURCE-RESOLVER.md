@@ -1,11 +1,15 @@
 # Source resolver — contrato de identificadores
 
 Contrato do que o produto consulta quando um identificador precisa de
-resolução externa. Não é código de ciclo 2 — esse código ainda não
-existe neste dump. Não inventa path (`/v2/isbn` e afins). Endpoints
-abaixo foram copiados da página oficial, não de memória.
+resolução externa. Código: `tools/resolve_sources.py`, alvo
+`make audit-fontes`. O gate estrutural (`make audit`) continua offline
+e não chama este resolvedor. Sem rede o identificador sai `skip`, nunca
+`ok`. Não inventa path (`/v2/isbn` e afins). Endpoints abaixo foram
+copiados da página oficial, não de memória.
 
-O caso ouro ISBN foi exercitado em 2026-08-30 (HEAD `27d4bdd`). O relatório dessa passagem não faz parte da superfície do produto.
+O caso ouro ISBN foi exercitado em 2026-08-30 (HEAD `27d4bdd`): resolução
+Open Library da edição papel, zero ocorrências no dump de `knowledge/` na
+mesma data. O relatório dessa passagem não faz parte da superfície do produto.
 
 | Identificador | Resolver | Endpoint canônico (copiado da página) | Doc oficial |
 | --- | --- | --- | --- |

@@ -23,6 +23,7 @@ from vault.events import (
     OperationalEventDraft,
     OperationalEventRecorder,
     OperationalEventStore,
+    RuntimeSnapshot,
     event_id,
 )
 from vault.layout_store import LayoutStore
@@ -439,6 +440,21 @@ def _frame_data(frame: str) -> dict[str, object]:
     return cast(dict[str, object], json.loads(raw))
 
 
+async def _next_named_frame(
+    stream: AsyncGenerator[str | bytes],
+    *,
+    timeout: float = 1,
+    event: str | None = None,
+) -> str:
+    """Ignora o comentário de abertura; opcionalmente espera um evento nomeado."""
+    while True:
+        frame = _frame_text(await asyncio.wait_for(anext(stream), timeout=timeout))
+        if frame.startswith(":"):
+            continue
+        if event is None or f"event: {event}" in frame:
+            return frame
+
+
 async def test_sse_entrega_snapshot_e_replay_por_last_event_id(tmp_path: Path) -> None:
     bus = OperationalEventBus(OperationalEventStore(tmp_path / "events"))
     await bus.start()
@@ -448,7 +464,7 @@ async def test_sse_entrega_snapshot_e_replay_por_last_event_id(tmp_path: Path) -
 
         fresh_response = await runtime_events(_request(bus))
         fresh = cast(AsyncGenerator[str | bytes], fresh_response.body_iterator)
-        snapshot_frame = _frame_text(await asyncio.wait_for(anext(fresh), timeout=1))
+        snapshot_frame = await _next_named_frame(fresh, event="runtime_snapshot")
 
         assert "event: runtime_snapshot" in snapshot_frame
         assert f"id: {second.id}" in snapshot_frame
@@ -469,7 +485,7 @@ async def test_sse_entrega_snapshot_e_replay_por_last_event_id(tmp_path: Path) -
 
         replay_response = await runtime_events(_request(bus, last_event_id=first.id))
         replay = cast(AsyncGenerator[str | bytes], replay_response.body_iterator)
-        replay_frame = _frame_text(await asyncio.wait_for(anext(replay), timeout=1))
+        replay_frame = await _next_named_frame(replay, event="task_assigned")
         await replay.aclose()
 
         assert "event: task_assigned" in replay_frame
@@ -492,8 +508,8 @@ async def test_sse_emite_heartbeat_nomeado_sem_criar_revisao(
 
         response = await runtime_events(_request(bus))
         stream = cast(AsyncGenerator[str | bytes], response.body_iterator)
-        snapshot_frame = _frame_text(await asyncio.wait_for(anext(stream), timeout=1))
-        heartbeat_frame = _frame_text(await asyncio.wait_for(anext(stream), timeout=1))
+        snapshot_frame = await _next_named_frame(stream, event="runtime_snapshot")
+        heartbeat_frame = await _next_named_frame(stream, event="runtime_heartbeat")
         await stream.aclose()
 
         assert "event: runtime_snapshot" in snapshot_frame
@@ -501,6 +517,34 @@ async def test_sse_emite_heartbeat_nomeado_sem_criar_revisao(
         assert "id:" not in heartbeat_frame
         assert _frame_data(heartbeat_frame) == {"runtimeRevision": latest.revision}
         assert bus.revision == latest.revision
+    finally:
+        await bus.stop()
+
+
+async def test_sse_abre_o_canal_antes_do_snapshot_lento(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    bus = OperationalEventBus(OperationalEventStore(tmp_path / "events"))
+    await bus.start()
+    original = bus.snapshot
+
+    async def lento() -> RuntimeSnapshot:
+        await asyncio.sleep(0.6)
+        return await original()
+
+    monkeypatch.setattr(bus, "snapshot", lento)
+    try:
+        response = await runtime_events(_request(bus))
+        stream = cast(AsyncGenerator[str | bytes], response.body_iterator)
+        abertura = _frame_text(await asyncio.wait_for(anext(stream), timeout=0.25))
+        assert abertura.startswith(":")
+        heartbeat_frame = await _next_named_frame(
+            stream, timeout=0.25, event="runtime_heartbeat"
+        )
+        assert "event: runtime_heartbeat" in heartbeat_frame
+        snapshot_frame = await _next_named_frame(stream, timeout=1, event="runtime_snapshot")
+        assert "event: runtime_snapshot" in snapshot_frame
+        await stream.aclose()
     finally:
         await bus.stop()
 

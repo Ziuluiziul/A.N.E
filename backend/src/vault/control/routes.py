@@ -1,10 +1,12 @@
 """As rotas do painel de controle. Leitura separada de mutação, credencial isolada.
 
-A separação não é estética. O snapshot é barato, idempotente e pode ser buscado em
-laço; a mutação muda estado durável e precisa devolver a leitura nova para que o
-frontend não fique adivinhando o efeito; a credencial toca o arquivo de segredos e
-tem regras que não valem para o resto — corpo que nunca é registrado, resposta que
-nunca devolve o valor, e erro que passa por redação antes de virar mensagem.
+A separação não é estética. O snapshot é idempotente e o painel o busca em
+laço; montá-lo lê a fila e por isso corre numa thread — senão um GET lento
+silencia `/health` e o SSE. A mutação muda estado durável e precisa devolver
+a leitura nova para que o frontend não fique adivinhando o efeito; a credencial
+toca o arquivo de segredos e tem regras que não valem para o resto — corpo que
+nunca é registrado, resposta que nunca devolve o valor, e erro que passa por
+redação antes de virar mensagem.
 
 Não há WebSocket aqui de propósito. O painel busca depois de cada mutação e em
 intervalo curto enquanto está aberto; um canal permanente por um dado que muda a cada
@@ -13,6 +15,7 @@ poucos segundos custaria mais do que resolve.
 
 from __future__ import annotations
 
+import asyncio
 from typing import Annotated
 
 from fastapi import APIRouter, Body, HTTPException, Path
@@ -69,8 +72,10 @@ def _snapshot(settings: Settings) -> ControlSnapshot:
 
 
 @router.get("/snapshot", response_model=ControlSnapshot)
-def read_snapshot() -> ControlSnapshot:
-    return _snapshot(_settings())
+async def read_snapshot() -> ControlSnapshot:
+    """Leitura idempotente fora do event loop: a fila pode levar segundos."""
+    settings = _settings()
+    return await asyncio.to_thread(_snapshot, settings)
 
 
 @router.patch("/auto", response_model=ControlSnapshot)

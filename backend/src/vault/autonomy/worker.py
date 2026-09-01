@@ -466,7 +466,7 @@ class OrchestratedTaskExecutor:
         bloqueados = set(task.attempted_endpoints)
         candidatos = [
             perfil
-            for perfil in inventory.select(usable=True)
+            for perfil in inventory.for_work()
             if perfil.key not in bloqueados
             and not self.call_gate.disabled(perfil.provider)
         ]
@@ -633,7 +633,7 @@ class OrchestratedTaskExecutor:
             blocked.add(failed)
         # O piso se mede no que é chamável, não no catálogo: sobrar 171 endpoints
         # nunca sondados não ajuda um painel que só pode usar os cinco provados.
-        usable = [p for p in self.inventory.select(usable=True) if p.key not in blocked]
+        usable = [p for p in self.inventory.for_work() if p.key not in blocked]
         if len(usable) < _MIN_PANEL_ENDPOINTS:
             return self.inventory
         return Inventory(profiles=[p for p in self.inventory.profiles if p.key not in blocked])

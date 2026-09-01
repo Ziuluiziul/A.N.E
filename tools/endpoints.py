@@ -78,7 +78,9 @@ def report(inventory: Inventory, args: argparse.Namespace) -> None:
         )
         print(f"{provider:8} .. {len(do_provedor)} endpoints, {len(found)} no recorte")
 
-        usaveis = inventory.select(provider=provider, usable=True)
+        usaveis = [
+            profile for profile in inventory.for_work() if profile.provider == provider
+        ]
         confirmado = usaveis[0].endpoint_id if usaveis else "nenhum produziu texto ainda"
         print(f"{'':8}    para trabalho: {confirmado}")
 

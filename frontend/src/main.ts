@@ -480,6 +480,90 @@ function atualizarAuto(): void {
   autoDaAtividade.setAttribute('aria-label', rotulo);
 }
 
+/**
+ * O `A` e o snapshot de controle no modo textual. Sem isto o botão aparece
+ * desabilitado para sempre: o polling só nascia depois da cena 3D.
+ */
+function ligarPollingDoControle(legend: string): void {
+  const cliente = createControlClient();
+  dadosDoDock = emptyDockData(legend);
+  atualizarAuto();
+  const pendentes = new Set<string>();
+  const aplicar = (snapshot: ControlSnapshot, stale: boolean, reason: string | null): void => {
+    if (!dadosDoDock) return;
+    dadosDoDock = {
+      ...dadosDoDock,
+      phase: 'pronto',
+      snapshot,
+      stale,
+      reason,
+      pending: new Set(pendentes),
+    };
+    atualizarAuto();
+  };
+  const polling = createControlPolling<ControlSnapshot>({
+    request: (signal) => cliente.snapshot({ signal }),
+    onValue: (snapshot) => aplicar(snapshot, false, null),
+    onError: (erro) => {
+      const motivo =
+        erro instanceof ControlError || erro instanceof ControlPollingTimeoutError
+          ? erro.message
+          : String(erro);
+      if (!dadosDoDock) return;
+      dadosDoDock = {
+        ...dadosDoDock,
+        phase: dadosDoDock.snapshot ? dadosDoDock.phase : 'indisponivel',
+        stale: dadosDoDock.snapshot !== null,
+        reason: motivo,
+        pending: new Set(pendentes),
+      };
+      atualizarAuto();
+    },
+  });
+  pedirSnapshotDeControle = () => polling.refresh();
+  autoDaAtividade.addEventListener(
+    'click',
+    () => {
+      const atual = dadosDoDock?.snapshot?.operation?.auto;
+      if (typeof atual !== 'boolean') return;
+      pendentes.add(controlId.auto());
+      if (dadosDoDock) dadosDoDock = { ...dadosDoDock, pending: new Set(pendentes) };
+      atualizarAuto();
+      void cliente
+        .setAuto(!atual, { signal: cicloAplicacao.signal })
+        .then((snapshot) => {
+          pendentes.delete(controlId.auto());
+          if (cicloAplicacao.signal.aborted) return;
+          aplicar(snapshot, false, null);
+        })
+        .catch((erro: unknown) => {
+          pendentes.delete(controlId.auto());
+          if (cicloAplicacao.signal.aborted) return;
+          if (dadosDoDock) {
+            dadosDoDock = { ...dadosDoDock, pending: new Set(pendentes) };
+          }
+          atualizarAuto();
+          anunciar(
+            `AUTO: ${erro instanceof ControlError ? erro.message : String(erro)}`,
+          );
+        });
+    },
+    { signal: cicloAplicacao.signal },
+  );
+  const ajustar = (): void => {
+    polling.setMode(
+      controlPollingMode(false, false, document.visibilityState === 'visible'),
+    );
+  };
+  document.addEventListener('visibilitychange', ajustar);
+  ajustar();
+  pararPolling = () => {
+    document.removeEventListener('visibilitychange', ajustar);
+    polling.dispose();
+    pedirSnapshotDeControle = null;
+  };
+}
+
 function pintarFluxos(streams: readonly LiveActivityStream[], split: boolean): void {
   if (!split) {
     fluxosDaAtividade.hidden = true;
@@ -780,6 +864,9 @@ async function iniciar(): Promise<void> {
         `Modo textual: ${projection.meta.counts.notes} entidades, ` +
           `${projection.meta.counts.claims} claims. Use a busca para localizar.`,
       );
+      // Reset de layout continua hidden: no texto não há posição. O A precisa do
+      // snapshot de controle, que no 3D só nascia depois da cena.
+      ligarPollingDoControle('modo textual');
       observarCorpus();
       return;
     }

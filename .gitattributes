@@ -1,0 +1,9 @@
+# Mesmo que alguém force-add o diário de construção, `git archive` não o leva.
+docs/HANDOFF-*.md export-ignore
+docs/CICLO-*.md export-ignore
+docs/PROMPT-*.md export-ignore
+docs/BOOTSTRAP-*.md export-ignore
+docs/FRENTE-*.md export-ignore
+docs/audits/ export-ignore
+docs/X-MCP.md export-ignore
+.claude/ export-ignore

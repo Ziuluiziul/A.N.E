@@ -11,6 +11,7 @@ from __future__ import annotations
 import os
 import stat
 import tempfile
+from collections.abc import Iterator
 from pathlib import Path
 
 import orjson
@@ -32,13 +33,25 @@ from vault.control.credentials import (
     write_credential,
 )
 from vault.control.preferences import ControlPreferences, PreferenceStore, WorkerPreference
-from vault.control.snapshot import build_snapshot, concurrency_ceiling, reasoning_support
+from vault.control.snapshot import (
+    build_snapshot,
+    clear_control_snapshot_cache,
+    concurrency_ceiling,
+    reasoning_support,
+)
 
 # Sintéticos, com o formato de uma chave e nenhuma validade. O prefixo `gsk_` existe
 # para exercitar a redação defensiva de `Settings.redact`.
 CHAVE_SINTETICA = "gsk_" + "S1nteticaParaTeste" * 2
 OUTRA_SINTETICA = "gsk_" + "OutraSinteticaTest" * 2
 CHAVE_OPENROUTER = "sk-or-v1-" + "OpenRouterSintetica" * 2
+
+
+@pytest.fixture(autouse=True)
+def _limpa_cache_do_snapshot_de_controle() -> Iterator[None]:
+    clear_control_snapshot_cache()
+    yield
+    clear_control_snapshot_cache()
 
 
 @pytest.fixture
@@ -378,6 +391,48 @@ class TestRaciocinio:
 
 
 class TestSnapshot:
+    def test_segunda_leitura_nao_reabre_a_fila(
+        self, tmp_path: Path, secrets: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """O painel busca o snapshot em laço; reler tasks.json com LOCK_EX era o custo."""
+        from vault.autonomy.queue import PersistentTaskQueue, QueueSnapshot
+
+        settings = settings_de_teste(tmp_path, secrets)
+        caminho = settings.state_dir / "autonomy" / "tasks.json"
+        caminho.parent.mkdir(parents=True, exist_ok=True)
+        caminho.write_bytes(
+            orjson.dumps({"schema_version": 1, "revision": 0, "tasks": []})
+        )
+
+        chamadas = {"n": 0}
+        original = PersistentTaskQueue.snapshot
+
+        def contar(self: PersistentTaskQueue) -> QueueSnapshot:
+            chamadas["n"] += 1
+            return original(self)
+
+        monkeypatch.setattr("vault.control.snapshot.PersistentTaskQueue.snapshot", contar)
+        prefs = ControlPreferences()
+        primeiro = build_snapshot(settings, prefs)
+        assert chamadas["n"] >= 1
+        n_depois_da_montagem = chamadas["n"]
+        segundo = build_snapshot(settings, prefs)
+        assert chamadas["n"] == n_depois_da_montagem
+        assert segundo is primeiro
+
+        apertado = settings.model_copy(update={"work_max_calls": 1})
+        terceiro = build_snapshot(apertado, prefs)
+        assert chamadas["n"] > n_depois_da_montagem
+        assert terceiro is not primeiro
+        n_depois_do_apertado = chamadas["n"]
+
+        caminho.write_bytes(
+            orjson.dumps({"schema_version": 1, "revision": 1, "tasks": []})
+        )
+        quarto = build_snapshot(settings, prefs)
+        assert quarto is not primeiro
+        assert chamadas["n"] > n_depois_do_apertado
+
     def test_ausencia_tem_motivo_e_nunca_vira_zero(self, tmp_path: Path, secrets: Path) -> None:
         settings = settings_de_teste(tmp_path, secrets)
         snapshot = build_snapshot(settings, ControlPreferences())

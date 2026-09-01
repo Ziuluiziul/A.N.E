@@ -433,8 +433,15 @@ export function watchRuntime(
   }
   source.addEventListener('runtime_heartbeat', (event) => {
     const revision = parseRuntimeHeartbeat(payloadOf(event));
-    if (revision !== null && revision === lastRuntimeRevision) validSignal();
-    else onError('heartbeat operacional inválido ou fora do cursor; ignorado.');
+    // Antes do snapshot o cursor ainda não existe: o backend manda heartbeat só
+    // para manter o canal (SharedWorker 8 s / inatividade 45 s) enquanto monta
+    // a cauda. Depois do snapshot o cursor tem de coincidir.
+    if (
+      revision !== null &&
+      (lastRuntimeRevision === null || revision === lastRuntimeRevision)
+    ) {
+      validSignal();
+    } else onError('heartbeat operacional inválido ou fora do cursor; ignorado.');
   });
   source.addEventListener('error', () => {
     onError('fluxo operacional interrompido; aguardando reconexão.');

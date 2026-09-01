@@ -79,6 +79,18 @@ a cena 3D em TypeScript e Three.js; `tools/` são os scripts curtos que o `Makef
 chama; `tests/` os testes; `runtime/` o estado local ignorado pelo Git. Segredos
 moram em `~/.config/ane/secrets.env` (legado `~/.config/vault-autodidata/secrets.env`) e nunca no repositório.
 
+## Superfície do produto
+
+O GitHub público é [`Ziuluiziul/A.N.E`](https://github.com/Ziuluiziul/A.N.E).
+Ele recebe **só a versão funcional**: código, corpus, ADRs e specs. Handoff,
+CICLO, PROMPT, BOOTSTRAP, frente morfogênica, `docs/audits/` e notas de plugin
+**não entram** — já existem no histórico do vault privado e no diretório irmão
+`_ane-construcao/`.
+
+Não copie a working tree para o público. `make audit` recusa esses arquivos no
+índice; `make publish-check` é o mesmo gate isolado. Branch extra no A.N.E.
+público é o modo como o diário vazou da última vez — o público tem só `main`.
+
 ## Escopo
 
 Não reorganize domínios, não mova notas entre pastas e não crie notas novas sem que

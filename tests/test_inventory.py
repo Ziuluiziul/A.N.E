@@ -43,6 +43,60 @@ def test_nunca_sondado_e_falhou_nao_se_confundem() -> None:
     assert inventory.select(status="unavailable") == [por_id["z-ai/glm-5.2"]]
 
 
+def test_apelido_latest_nao_recebe_trabalho() -> None:
+    """No Google, `-latest` come o RPM do SKU estável; o painel AI Studio agrega os dois."""
+    registry = EndpointRegistry()
+    registry.record_probe(ProbeResult("google", "gemini-3.5-flash-lite", "ok", "ok", 1))
+    registry.record_probe(ProbeResult("google", "gemini-flash-lite-latest", "ok", "ok", 1))
+
+    inventory = build_inventory(
+        {
+            "google": snapshot(
+                "google", "gemini-3.5-flash-lite", "gemini-flash-lite-latest"
+            )
+        },
+        registry,
+    )
+    usaveis = [profile.endpoint_id for profile in inventory.select(usable=True)]
+    assert usaveis == ["gemini-3.5-flash-lite"]
+    assert "gemini-flash-lite-latest" not in {
+        p.endpoint_id for p in inventory.for_work()
+    }
+
+
+def test_preview_google_cede_ao_estavel_do_mesmo_sku() -> None:
+    """`3.1-flash-lite` e `3.1-flash-lite-preview` são um teto só no Studio."""
+    registry = EndpointRegistry()
+    for endpoint in (
+        "gemini-3.1-flash-lite",
+        "gemini-3.1-flash-lite-preview",
+        "gemini-3-flash-preview",
+        "gemini-3.1-pro-preview",
+        "gemini-3.1-pro-preview-customtools",
+    ):
+        registry.record_probe(ProbeResult("google", endpoint, "ok", "ok", 1))
+
+    inventory = build_inventory(
+        {
+            "google": snapshot(
+                "google",
+                "gemini-3.1-flash-lite",
+                "gemini-3.1-flash-lite-preview",
+                "gemini-3-flash-preview",
+                "gemini-3.1-pro-preview",
+                "gemini-3.1-pro-preview-customtools",
+            )
+        },
+        registry,
+    )
+    trabalho = [profile.endpoint_id for profile in inventory.for_work()]
+    assert "gemini-3.1-flash-lite" in trabalho
+    assert "gemini-3.1-flash-lite-preview" not in trabalho
+    assert "gemini-3-flash-preview" in trabalho
+    assert "gemini-3.1-pro-preview" in trabalho
+    assert "gemini-3.1-pro-preview-customtools" not in trabalho
+
+
 def test_trabalho_exige_aptidao_e_sonda_produtiva() -> None:
     """Nem só classificar basta, nem só responder: `usable_for_work` pede os dois."""
     registry = EndpointRegistry()

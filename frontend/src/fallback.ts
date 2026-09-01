@@ -8,7 +8,7 @@
 // `?texto=1` ou automaticamente quando o WebGL não inicializa. Continua somente
 // leitura, como todo o resto do visualizador.
 
-import type { Projection, ProjectionEdge, ProjectionNode } from './contract';
+import { loadNoteDocument, type Projection, type ProjectionEdge, type ProjectionNode } from './contract';
 
 const TIPOS: Record<ProjectionNode['kind'], string> = {
   note: 'nota',
@@ -45,6 +45,21 @@ export function webglDisponivel(): boolean {
 export function modoTextualPedido(search: string): boolean {
   const parametros = new URLSearchParams(search);
   return parametros.get('texto') === '1' || parametros.get('text') === '1';
+}
+
+/** Só o corpus tem arquivo. Pedir documento de um painel de quórum inventaria 404. */
+export function referenciaDocumental(node: ProjectionNode): string | null {
+  if (node.layer !== 'epistemic' || node.path === null || node.path === '') return null;
+  return node.path;
+}
+
+export async function carregarCorpoTextual(
+  node: ProjectionNode,
+  load: (referencia: string) => Promise<string> = loadNoteDocument,
+): Promise<string | null> {
+  const referencia = referenciaDocumental(node);
+  if (referencia === null) return null;
+  return load(referencia);
 }
 
 function vizinhas(projection: Projection, id: string): ProjectionEdge[] {
@@ -182,7 +197,33 @@ export function montarModoTextual(
       definicoes.append(dt, dd);
     }
 
+    const corpo = document.createElement('pre');
+    corpo.className = 'corpo-nota';
+    const referencia = referenciaDocumental(node);
+    if (referencia !== null) {
+      corpo.hidden = true;
+      let pedido = false;
+      detalhe.addEventListener('toggle', () => {
+        if (!detalhe.open) {
+          corpo.hidden = true;
+          return;
+        }
+        corpo.hidden = false;
+        if (pedido) return;
+        pedido = true;
+        corpo.textContent = 'Carregando documento…';
+        void carregarCorpoTextual(node)
+          .then((texto) => {
+            corpo.textContent = texto ?? '';
+          })
+          .catch((erro: unknown) => {
+            corpo.textContent = `Documento indisponível: ${String(erro)}`;
+          });
+      });
+    }
+
     detalhe.append(sumario, definicoes);
+    if (referencia !== null) detalhe.append(corpo);
     item.append(detalhe);
     lista.append(item);
     return { item, chave: normalizar(`${node.title} ${node.id} ${node.domainLabel}`) };

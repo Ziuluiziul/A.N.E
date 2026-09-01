@@ -316,6 +316,15 @@ def _frame_data(frame: str) -> dict[str, object]:
     return cast(dict[str, object], json.loads(raw))
 
 
+async def _next_named_frame(
+    stream: AsyncGenerator[str | bytes], *, timeout: float = 1
+) -> str:
+    while True:
+        frame = _frame_text(await asyncio.wait_for(anext(stream), timeout=timeout))
+        if not frame.startswith(":"):
+            return frame
+
+
 async def test_sse_entrega_snapshot_e_retoma_por_last_event_id(tmp_path: Path) -> None:
     store = CognitionStore(tmp_path / "cognition")
     bus = CognitionBus(store)
@@ -326,7 +335,7 @@ async def test_sse_entrega_snapshot_e_retoma_por_last_event_id(tmp_path: Path) -
 
         resposta = await runtime_cognition(_request(bus))
         fluxo = cast(AsyncGenerator[str | bytes], resposta.body_iterator)
-        quadro = _frame_text(await asyncio.wait_for(anext(fluxo), timeout=1))
+        quadro = await _next_named_frame(fluxo)
 
         assert "event: cognition_snapshot" in quadro
         assert f"id: {segundo.id}" in quadro
@@ -344,7 +353,7 @@ async def test_sse_entrega_snapshot_e_retoma_por_last_event_id(tmp_path: Path) -
 
         retomada = await runtime_cognition(_request(bus, last_event_id=primeiro.id))
         replay = cast(AsyncGenerator[str | bytes], retomada.body_iterator)
-        quadro_replay = _frame_text(await asyncio.wait_for(anext(replay), timeout=1))
+        quadro_replay = await _next_named_frame(replay)
         await replay.aclose()
 
         assert "cognition_snapshot" not in quadro_replay
@@ -367,8 +376,8 @@ async def test_sse_emite_heartbeat_sem_criar_revisao(
 
         resposta = await runtime_cognition(_request(bus))
         fluxo = cast(AsyncGenerator[str | bytes], resposta.body_iterator)
-        await asyncio.wait_for(anext(fluxo), timeout=1)
-        batida = _frame_text(await asyncio.wait_for(anext(fluxo), timeout=1))
+        await _next_named_frame(fluxo)
+        batida = await _next_named_frame(fluxo)
         await fluxo.aclose()
 
         assert "event: cognition_heartbeat" in batida

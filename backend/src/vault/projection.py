@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import hashlib
 import re
+import threading
 from collections import Counter
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -29,7 +30,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from vault.corpus import CorpusReader, Note
-from vault.operational import OPERATIONAL_KINDS, build_operational
+from vault.operational import _MAX_PAINEIS_NA_PROJECAO, OPERATIONAL_KINDS, build_operational
 
 CONTRACT_VERSION = "1.1.0"
 
@@ -418,6 +419,87 @@ def build_projection(reader: CorpusReader, *, demo_operational: bool = False) ->
     }
 
 
+def _stat_signature(path: Path) -> tuple[int, int]:
+    try:
+        stat = path.stat()
+    except OSError:
+        return (0, 0)
+    return (stat.st_mtime_ns, stat.st_size)
+
+
+def runtime_overlay_signature(
+    quorum_root: Path, state_dir: Path | None = None
+) -> tuple[Any, ...]:
+    """Assinatura barata do overlay: teto de painéis por mtime + catálogo em disco.
+
+    Não lê JSON. Invalida quando nasce/some um painel ou quando o observatório
+    recente (os ``_MAX_PAINEIS_NA_PROJECAO`` mais novos) muda de recência.
+    """
+    root = quorum_root.resolve(strict=False)
+    parts: list[Any] = [str(root)]
+    if not root.is_dir():
+        return tuple(parts)
+    try:
+        children = list(root.iterdir())
+    except OSError:
+        return tuple(parts)
+    parts.append(len(children))
+    recency: list[tuple[int, str]] = []
+    for path in children:
+        try:
+            recency.append((path.stat().st_mtime_ns, path.name))
+        except OSError:
+            recency.append((0, path.name))
+    recency.sort(reverse=True)
+    parts.append(tuple(recency[:_MAX_PAINEIS_NA_PROJECAO]))
+    if state_dir is None:
+        return tuple(parts)
+    state = state_dir.resolve(strict=False)
+    parts.append(str(state))
+    parts.append(_stat_signature(state / "endpoints.json"))
+    parts.append(_stat_signature(state / "models-discovery.json"))
+    try:
+        catalogos = tuple(
+            sorted(
+                (path.name, _stat_signature(path))
+                for path in state.iterdir()
+                if path.name.startswith("models-") and path.suffix == ".json"
+            )
+        )
+    except OSError:
+        catalogos = ()
+    parts.append(catalogos)
+    return tuple(parts)
+
+
+_OVERLAY_LOCK = threading.Lock()
+_OVERLAY_CACHE: tuple[tuple[Any, ...], dict[str, list[dict[str, Any]]], str] | None = None
+
+
+def clear_runtime_overlay_cache() -> None:
+    """Só testes: o cache é por processo, e um tmp_path reutilizado mentiria."""
+    global _OVERLAY_CACHE
+    with _OVERLAY_LOCK:
+        _OVERLAY_CACHE = None
+
+
+def _cached_operational(
+    quorum_root: Path, state_dir: Path | None
+) -> tuple[dict[str, list[dict[str, Any]]], str]:
+    global _OVERLAY_CACHE
+    key = runtime_overlay_signature(quorum_root, state_dir)
+    with _OVERLAY_LOCK:
+        cached = _OVERLAY_CACHE
+        if cached is not None and cached[0] == key:
+            return cached[1], cached[2]
+    operational, source = build_operational(
+        demo=False, quorum_root=quorum_root, state_dir=state_dir
+    )
+    with _OVERLAY_LOCK:
+        _OVERLAY_CACHE = (key, operational, source)
+    return operational, source
+
+
 def with_runtime_quorum(
     projection: dict[str, Any],
     quorum_root: Path,
@@ -427,10 +509,11 @@ def with_runtime_quorum(
 
     O fingerprint continua identificando apenas `knowledge/`. Atualizar um painel de
     quórum não finge ser uma revisão do corpus e não invalida a memória espacial.
+
+    O overlay é cacheado pela assinatura de mtime: o GET não relê JSON enquanto o
+    observatório recente e o catálogo não mudarem.
     """
-    operational, source = build_operational(
-        demo=False, quorum_root=quorum_root, state_dir=state_dir
-    )
+    operational, source = _cached_operational(quorum_root, state_dir)
     if source == "none":
         return projection
 

@@ -77,8 +77,16 @@ class EndpointProfile:
 
     @property
     def usable_for_work(self) -> bool:
-        """Apto pelo nome **e** comprovado por sonda que produziu texto."""
-        return self.aptitude.eligible and self.observed_status == "ok"
+        """Apto pelo nome **e** comprovado por sonda que produziu texto.
+
+        Apelido `-latest` não entra: no Google ele compartilha RPM/RPD com o
+        SKU estável (medido no painel AI Studio) e troca de modelo sem aviso.
+        """
+        return (
+            self.aptitude.eligible
+            and self.observed_status == "ok"
+            and self.aptitude.stability != "alias"
+        )
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -143,6 +151,21 @@ class Inventory:
             found = [profile for profile in found if profile.usable_for_work is usable]
         return sorted(found, key=lambda profile: preference_key(profile.aptitude))
 
+    def for_work(self) -> list[EndpointProfile]:
+        """Pool de quórum: usáveis, sem preview Google que duplica um estável.
+
+        `gemini-3.1-flash-lite` e `gemini-3.1-flash-lite-preview` são duas
+        chaves no vault e **um** SKU no painel (15 RPM / 500 RPD). Mandar
+        trabalho aos dois esgota o lite e deixa Flash/Gemma ociosos.
+        """
+        usaveis = self.select(usable=True)
+        google_ids = {p.endpoint_id for p in usaveis if p.provider == "google"}
+        return [
+            profile
+            for profile in usaveis
+            if not _google_preview_duplicado(profile, google_ids)
+        ]
+
     def providers(self) -> list[str]:
         return sorted({profile.provider for profile in self.profiles})
 
@@ -151,6 +174,18 @@ class Inventory:
             "count": len(self.profiles),
             "endpoints": [profile.to_dict() for profile in self.select()],
         }
+
+
+def _google_preview_duplicado(profile: EndpointProfile, google_ids: set[str]) -> bool:
+    """Preview/customtools só sobra quando o ID estável não está no pool."""
+    if profile.provider != "google":
+        return False
+    endpoint = profile.endpoint_id
+    if endpoint.endswith("-customtools"):
+        return endpoint.removesuffix("-customtools") in google_ids
+    if endpoint.endswith("-preview"):
+        return endpoint.removesuffix("-preview") in google_ids
+    return False
 
 
 def build_inventory(

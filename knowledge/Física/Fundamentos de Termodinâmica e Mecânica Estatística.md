@@ -96,7 +96,7 @@ Entropias termodinâmica, de Gibbs/Shannon e de von Neumann têm relações form
 | `CLM-FIS-TH-002` | A segunda lei é monotonicidade microscópica exata de toda trajetória. | `refuted` | Flutuações e reversibilidade microscópica impedem essa leitura literal. |
 | `CLM-FIS-TH-003` | Relações lineares de Onsager valem arbitrariamente longe do equilíbrio. | `refuted` | Onsager é regime linear próximo do equilíbrio e sob reversibilidade apropriada. |
 | `CLM-FIS-TH-004` | Estruturas dissipativas podem emergir em sistemas dirigidos. | `supported` | Teoria e experimentos em classes específicas; não é princípio universal. |
-| `CLM-FIS-TH-005` | Existe uma lei variacional universal para sistemas fora do equilíbrio. | `open` | Ausência de evidência exaustiva; propostas (ex: produção de entropia mínima) são locais ou específicas. |
+| `CLM-FIS-TH-005` | Existe uma lei variacional universal para sistemas fora do equilíbrio. | `open` | Ausência de evidência exaustiva mantida após busca sem chamada recente; propostas são locais ou específicas. |
 
 ## Relações justificadas
 

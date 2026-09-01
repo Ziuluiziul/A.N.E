@@ -57,8 +57,8 @@ aproximar um território. Exibir todas as arestas de uma vez produziria um emara
 em que nenhuma pergunta se responde.
 
 Não há barra nem painel lateral permanente: a navegação usa gestos e teclado, e a
-leitura acontece numa superfície tridimensional ao lado da entidade. `Esc` abre a
-configuração quando nada está selecionado. Uma placa mínima no rodapé declara se
+leitura acontece numa superfície tridimensional ao lado da entidade. `Esc` só
+limpa a seleção visível — sem seleção, não abre menu. Uma placa mínima no rodapé declara se
 corpus e runtime estão vivos, reconectando ou em modo offline.
 
 | Ação | Como |

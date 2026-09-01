@@ -4,7 +4,7 @@ domain: vault
 kind: registro
 status: active
 epistemic_status: operational
-updated: 2026-08-30
+updated: 2026-09-01
 verified_at: 2026-07-17
 ---
 
@@ -136,4 +136,4 @@ Promoção de quarentena para ativo exige:
 
 Estas regras foram escritas quando o Vault era mantido por um pipeline automatizado com gates determinísticos. O pipeline foi descontinuado na migração de 2026-07-28.
 
-O **Promoter** passou a ser o único escritor do diretório `knowledge/`; intervenções humanas limitam‑se a credenciais, OAuth interativo, comandos administrativos/destrutivos e consumo acima do orçamento. O critério editorial permanece o mesmo: a regra de admissão, o vocabulário epistêmico, a tabela de claims, o tratamento de fontes e a tipagem de wikilinks continuam sendo o padrão do corpus — agora aplicados por julgamento humano em vez de gate.
+O **Promoter** passou a ser o único escritor do diretório `knowledge/`; intervenções humanas limitam‑se a credenciais, OAuth interativo, comandos administrativos/destrutivos e consumo acima do orçamento. O critério editorial permanece o mesmo: a regra de admissão, o vocabulário epistêmico, a tabela de claims, o tratamento de fontes e a tipagem de wikilinks continuam sendo o padrão do corpus — agora aplicados pelo quórum multimodelo e pelo Promoter, não por agente isolado nem por edição avulsa.

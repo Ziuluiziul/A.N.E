@@ -451,6 +451,15 @@ def test_nim_espera_mais_que_os_outros_dois_provedores() -> None:
     assert groq.read == 30.0
 
 
+def test_google_espera_o_mesmo_que_o_nim() -> None:
+    """3.7 Flash e Gemma 4 estouraram 504 em ~34 s com timeout de 30 s."""
+    from providers.google.adapter import HTTP_TIMEOUT_MS, GoogleAdapter
+
+    assert HTTP_TIMEOUT_MS == 60_000
+    timeout = GoogleAdapter("dummy")._client._api_client._http_options.timeout  # noqa: SLF001
+    assert timeout == HTTP_TIMEOUT_MS
+
+
 # --- Ollama Cloud ------------------------------------------------------------
 #
 # O adaptador é o único que não tem SDK, então o transporte é dele e precisa de teste

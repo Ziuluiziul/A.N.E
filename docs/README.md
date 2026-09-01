@@ -19,7 +19,8 @@ Não é diário de sessões, nem arquivo de handoffs.
 | [WORKER.md](WORKER.md) | `VAULT_AUTONOMOUS_WORKER`: quem spawna, default, teto de chamadas |
 | [SOURCE-RESOLVER.md](SOURCE-RESOLVER.md) | Contrato DOI/arXiv/ISBN; skip sem rede |
 
-Este diretório não é diário de sessões. Handoff, ciclo, prompt e auditoria de
-sessão não fazem parte do produto público. Docs não promovem handoff a spec.
+Este diretório não é diário de sessões. Handoff, CICLO, PROMPT, BOOTSTRAP,
+frente morfogênica e auditoria de sessão ficam fora do índice e fora do
+GitHub público. Docs não promovem handoff a spec.
 
 O corpus e a política editorial moram em `knowledge/`, nunca aqui.

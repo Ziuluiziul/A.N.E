@@ -175,7 +175,7 @@ def estimate_quorum_capacity(
 
     pool: list[EndpointProfile] = []
     sem_cota = 0
-    for perfil in inventory.select(usable=True):
+    for perfil in inventory.for_work():
         if perfil.key in fora or not provider_counts_for_quorum(perfil.provider):
             continue
         if not ledger.allows(

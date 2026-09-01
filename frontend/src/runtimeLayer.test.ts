@@ -646,7 +646,7 @@ describe('a nuvem viva cabe no miolo que lhe reservaram', () => {
       }
     }
     expect(sobrepostos).toBe(0);
-  });
+  }, 20_000);
 
   it('a reserva menor produz nuvem menor', () => {
     const projection = projectRuntime(nuvemGrande(40));

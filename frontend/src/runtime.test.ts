@@ -272,4 +272,63 @@ describe('SSE operacional', () => {
     close();
     expect(source.close).toHaveBeenCalledOnce();
   });
+
+  it('aceita heartbeat de abertura antes do snapshot para não declarar timeout', async () => {
+    vi.useFakeTimers();
+    const instances: EventSourceFake[] = [];
+    class EventSourceFake {
+      readonly listeners = new Map<string, Set<EventListener>>();
+      readonly close = vi.fn();
+
+      constructor() {
+        instances.push(this);
+      }
+      addEventListener(kind: string, listener: EventListener): void {
+        const bucket = this.listeners.get(kind) ?? new Set<EventListener>();
+        bucket.add(listener);
+        this.listeners.set(kind, bucket);
+      }
+      removeEventListener(kind: string, listener: EventListener): void {
+        this.listeners.get(kind)?.delete(listener);
+      }
+      emit(kind: string, event: Event): void {
+        for (const listener of [...(this.listeners.get(kind) ?? [])]) listener(event);
+      }
+    }
+    vi.stubGlobal('EventSource', EventSourceFake);
+    const statuses: string[] = [];
+    const onError = vi.fn();
+    const onSnapshot = vi.fn();
+    const close = watchRuntime(onSnapshot, vi.fn(), onError, {
+      inactivityTimeoutMs: 50,
+      onConnectionStatus: (status) => statuses.push(status),
+    });
+    const source = instances[0]!;
+
+    source.emit('open', new Event('open'));
+    source.emit(
+      'runtime_heartbeat',
+      new MessageEvent('runtime_heartbeat', {
+        data: JSON.stringify({ runtimeRevision: 0 }),
+      }),
+    );
+    expect(onError).not.toHaveBeenCalled();
+    expect(statuses.at(-1)).toBe('online');
+
+    await vi.advanceTimersByTimeAsync(49);
+    expect(statuses.at(-1)).toBe('online');
+    await vi.advanceTimersByTimeAsync(1);
+    expect(statuses.at(-1)).toBe('timeout');
+
+    source.emit(
+      'runtime_heartbeat',
+      new MessageEvent('runtime_heartbeat', {
+        data: JSON.stringify({ runtimeRevision: 0 }),
+      }),
+    );
+    expect(statuses.at(-1)).toBe('online');
+    expect(onSnapshot).not.toHaveBeenCalled();
+
+    close();
+  });
 });

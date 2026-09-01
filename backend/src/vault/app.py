@@ -12,6 +12,7 @@ regra de nunca registrar o corpo do pedido nem devolver o valor gravado.
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -163,7 +164,8 @@ def operational_slot_store() -> OperationalSlotStore:
 
 
 @app.get("/health")
-def health() -> dict[str, Any]:
+async def health() -> dict[str, Any]:
+    """Liveness no event loop: não disputa threadpool com a projeção."""
     settings = get_settings()
     corpus = settings.corpus_dir
     return {
@@ -175,8 +177,7 @@ def health() -> dict[str, Any]:
     }
 
 
-@app.get("/corpus/notes")
-def list_notes() -> dict[str, Any]:
+def _list_notes_payload() -> dict[str, Any]:
     notes = reader().list_notes()
     return {
         "count": len(notes),
@@ -194,8 +195,13 @@ def list_notes() -> dict[str, Any]:
     }
 
 
-@app.get("/corpus/notes/{name}")
-def read_note(name: str) -> dict[str, Any]:
+@app.get("/corpus/notes")
+async def list_notes() -> dict[str, Any]:
+    """Índice do corpus: disco fora do event loop, como a projeção."""
+    return await asyncio.to_thread(_list_notes_payload)
+
+
+def _read_note_payload(name: str) -> dict[str, Any]:
     corpus = reader()
     try:
         note = corpus.read_note(name)
@@ -222,22 +228,13 @@ def read_note(name: str) -> dict[str, Any]:
     }
 
 
-@app.get("/corpus/documents/{ref:path}")
-def read_document(ref: str) -> dict[str, Any]:
-    """O corpo canônico de uma nota, até o EOF, para o painel aberto mostrá-la inteira.
+@app.get("/corpus/notes/{name}")
+async def read_note(name: str) -> dict[str, Any]:
+    """Nota única: disco fora do event loop, como o índice."""
+    return await asyncio.to_thread(_read_note_payload, name)
 
-    A projeção não leva isto e não deve levar: ela é um artefato em bloco, versionado e
-    servido inteiro a cada abertura, e pôr 84 corpos dentro dela multiplicaria por seis o
-    que trafega para que um único painel — o que estiver aberto — use um deles. Aqui o
-    corpo é buscado sob demanda, um por vez, que é exatamente quantos se leem por vez.
 
-    O caminho é `path` e não um segmento porque a identidade de uma nota **tem** barras:
-    ela é o caminho relativo POSIX sem extensão, e é assim que o wikilink a escreve.
-
-    A contenção é a do próprio leitor: `read_note` resolve o caminho e exige que ele caia
-    dentro do corpus, e `_parse` confere de novo antes de ler. Referência que escape vira
-    404 pelo mesmo caminho que uma nota inexistente — sem revelar o que existe fora.
-    """
+def _read_document_payload(ref: str) -> dict[str, Any]:
     corpus = reader()
     for candidato in (ref, f"{ref}.md"):
         # A contenção acontece **antes** do leitor, e não dentro do `except` dele.
@@ -263,6 +260,25 @@ def read_document(ref: str) -> dict[str, Any]:
     raise HTTPException(status_code=404, detail=f"nota não encontrada no corpus: {ref}")
 
 
+@app.get("/corpus/documents/{ref:path}")
+async def read_document(ref: str) -> dict[str, Any]:
+    """O corpo canônico de uma nota, até o EOF, para o painel aberto mostrá-la inteira.
+
+    A projeção não leva isto e não deve levar: ela é um artefato em bloco, versionado e
+    servido inteiro a cada abertura, e pôr 84 corpos dentro dela multiplicaria por seis o
+    que trafega para que um único painel — o que estiver aberto — use um deles. Aqui o
+    corpo é buscado sob demanda, um por vez, que é exatamente quantos se leem por vez.
+
+    O caminho é `path` e não um segmento porque a identidade de uma nota **tem** barras:
+    ela é o caminho relativo POSIX sem extensão, e é assim que o wikilink a escreve.
+
+    A contenção é a do próprio leitor: `read_note` resolve o caminho e exige que ele caia
+    dentro do corpus, e `_parse` confere de novo antes de ler. Referência que escape vira
+    404 pelo mesmo caminho que uma nota inexistente — sem revelar o que existe fora.
+    """
+    return await asyncio.to_thread(_read_document_payload, ref)
+
+
 def _dentro_do_corpus(root: Path, ref: str) -> bool:
     """A referência resolve para dentro da raiz do corpus?
 
@@ -283,29 +299,36 @@ def _dentro_do_corpus(root: Path, ref: str) -> bool:
 
 
 @app.get("/corpus/projection")
-def corpus_projection(request: Request) -> dict[str, Any]:
+async def corpus_projection(request: Request) -> dict[str, Any]:
     """Projeção sanitizada e versionada. É tudo que o navegador recebe do corpus.
 
     Sem caminho absoluto, sem conteúdo de arquivo, sem credencial. Ambiguidade de
     identidade vira 409 com o diagnóstico, e não um grafo plausível e errado.
+
+    O overlay de quórum é CPU-bound (mtime de painéis + JSON). Montá-lo neste
+    coroutine bloquearia `/health` e os SSE; a montagem corre numa thread, com
+    cache de overlay em `with_runtime_quorum`.
     """
     watcher: CorpusProjectionWatcher | None = getattr(
         request.app.state, "corpus_watcher", None
     )
-    try:
+    settings = get_settings()
+    quorum_root = settings.runtime_dir / "quorum"
+    state_dir = settings.state_dir
+    demo = settings.demo_operational
+
+    def assemble() -> dict[str, Any]:
         # O fallback só atende chamadas diretas sem lifespan (por exemplo, inspeção
         # isolada). No servidor, o endpoint e o SSE leem o mesmo snapshot validado.
-        settings = get_settings()
         base = (
-            build_projection(reader(), demo_operational=settings.demo_operational)
+            build_projection(reader(), demo_operational=demo)
             if watcher is None
             else watcher.projection
         )
-        return with_runtime_quorum(
-            base,
-            settings.runtime_dir / "quorum",
-            settings.state_dir,
-        )
+        return with_runtime_quorum(base, quorum_root, state_dir)
+
+    try:
+        return await asyncio.to_thread(assemble)
     except (CorpusIdentityError, ProjectionError, ProjectionUnavailable) as error:
         raise HTTPException(status_code=409, detail=str(error)) from error
 
@@ -333,6 +356,16 @@ async def corpus_events(request: Request) -> StreamingResponse:
     )
 
 
+def _sse_open() -> str:
+    """Primeiro byte do canal: o EventSource só dispara `open` depois do header+chunk.
+
+    Comentário SSE não chega ao JavaScript; só abre o socket. O snapshot operacional
+    ainda pode demorar (cauda jsonl + GIL do worker); `runtime_events` manda um
+    heartbeat nomeado em seguida para o SharedWorker não cair no prazo de 8 s.
+    """
+    return ": connected\n\n"
+
+
 def _sse_frame(*, event: str, data: dict[str, Any], identifier: str | None = None) -> str:
     lines = []
     if identifier is not None:
@@ -354,6 +387,14 @@ async def runtime_events(request: Request) -> StreamingResponse:
     requested_revision = revision_from_event_id(request.headers.get("last-event-id"))
 
     async def stream() -> AsyncIterator[str]:
+        yield _sse_open()
+        # O SharedWorker só cancela o prazo de 8 s no primeiro evento *nomeado*.
+        # Comentário abre o EventSource; heartbeat declara o canal vivo enquanto
+        # ``snapshot()`` lê a cauda do jsonl (dezenas de segundos sob o worker).
+        yield _sse_frame(
+            event="runtime_heartbeat",
+            data={"runtimeRevision": event_bus.revision},
+        )
         snapshot = await event_bus.snapshot()
         if requested_revision is None or requested_revision > snapshot.runtime_revision:
             # O navegador deriva a camada visual dos eventos. Enviar aqui a projeção
@@ -411,6 +452,7 @@ async def runtime_cognition(request: Request) -> StreamingResponse:
     requested = revision_from_frame_id(request.headers.get("last-event-id"))
 
     async def stream() -> AsyncIterator[str]:
+        yield _sse_open()
         snapshot = await cognition_bus.snapshot()
         if requested is None or requested > snapshot.revision:
             yield _sse_frame(
@@ -446,8 +488,7 @@ async def runtime_cognition(request: Request) -> StreamingResponse:
     )
 
 
-@app.get("/proposals")
-def list_proposals() -> dict[str, Any]:
+def _list_proposals_payload() -> dict[str, Any]:
     store = ProposalStore(get_settings().proposals_dir)
     proposals = store.list_proposals()
     return {
@@ -467,6 +508,11 @@ def list_proposals() -> dict[str, Any]:
     }
 
 
+@app.get("/proposals")
+async def list_proposals() -> dict[str, Any]:
+    return await asyncio.to_thread(_list_proposals_payload)
+
+
 # --- memória espacial -------------------------------------------------------
 #
 # Estes são os únicos verbos de escrita da API, e escrevem num único lugar:
@@ -474,12 +520,7 @@ def list_proposals() -> dict[str, Any]:
 # nem confiança —, e o corpus continua somente leitura para todo o sistema.
 
 
-@app.get("/layout/{fingerprint}")
-def read_layout(
-    fingerprint: str,
-    algorithm_version: Annotated[AlgorithmVersion, Query(alias="algorithmVersion")],
-) -> dict[str, Any]:
-    """Posições gravadas para esta impressão do corpus. Ausência não é erro."""
+def _read_layout_payload(fingerprint: str, algorithm_version: str) -> dict[str, Any]:
     snapshot = layout_store().load(fingerprint, algorithm_version)
     if snapshot is None:
         return {
@@ -489,6 +530,15 @@ def read_layout(
             "positions": {},
         }
     return snapshot.to_dict()
+
+
+@app.get("/layout/{fingerprint}")
+async def read_layout(
+    fingerprint: str,
+    algorithm_version: Annotated[AlgorithmVersion, Query(alias="algorithmVersion")],
+) -> dict[str, Any]:
+    """Posições gravadas para esta impressão do corpus. Ausência não é erro."""
+    return await asyncio.to_thread(_read_layout_payload, fingerprint, algorithm_version)
 
 
 @app.put("/layout/{fingerprint}")
@@ -537,14 +587,7 @@ def write_layout(request: Request, fingerprint: str, body: LayoutWriteBody) -> d
     }
 
 
-@app.get("/operational-layout/{algorithm_version}")
-def read_operational_slots(algorithm_version: int) -> dict[str, Any]:
-    """Ordinais globais das execuções para uma versão da geometria operacional.
-
-    Versão nova não é erro: é ausência de memória para aquela geometria. O store
-    já recusa inteiro fora de 1–10000; repetir um enum aqui derruba a cena quando
-    o frontend sobe a versão — foi o 422 em `/operational-layout/6`.
-    """
+def _read_operational_slots_payload(algorithm_version: int) -> dict[str, Any]:
     snapshot = operational_slot_store().load(algorithm_version)
     if snapshot is None:
         return {
@@ -554,6 +597,17 @@ def read_operational_slots(algorithm_version: int) -> dict[str, Any]:
             "slots": {},
         }
     return snapshot.to_dict()
+
+
+@app.get("/operational-layout/{algorithm_version}")
+async def read_operational_slots(algorithm_version: int) -> dict[str, Any]:
+    """Ordinais globais das execuções para uma versão da geometria operacional.
+
+    Versão nova não é erro: é ausência de memória para aquela geometria. O store
+    já recusa inteiro fora de 1–10000; repetir um enum aqui derruba a cena quando
+    o frontend sobe a versão — foi o 422 em `/operational-layout/6`.
+    """
+    return await asyncio.to_thread(_read_operational_slots_payload, algorithm_version)
 
 
 @app.put("/operational-layout/{algorithm_version}")

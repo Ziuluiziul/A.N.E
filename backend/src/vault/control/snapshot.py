@@ -11,7 +11,7 @@ Cada coisa que o painel mostra já tem dono neste repositório:
 - preferência manual e AUTO — `vault.control.preferences`.
 
 Este módulo lê essas fontes e as arruma; ele não decide política. Em particular, o
-provedor e o modelo que o AUTO resolve saem de `Inventory.select(usable=True)`, que já
+provedor e o modelo que o AUTO resolve saem de `Inventory.for_work()`, que já
 devolve na ordem de preferência canônica — reimplementar a escolha aqui criaria uma
 segunda política que divergiria da primeira no primeiro ajuste.
 
@@ -21,8 +21,11 @@ entra em `unavailable`. Nenhum caminho deste arquivo produz zero para dizer "nã
 
 from __future__ import annotations
 
+import threading
 from pathlib import Path
 from typing import Any, Literal
+
+import orjson
 
 from providers.catalog import DiscoverySnapshotError, load_all_snapshots
 from providers.inventory import EndpointProfile, Inventory, build_inventory
@@ -100,8 +103,6 @@ def _inventory(settings: Settings) -> tuple[Inventory | None, frozenset[str], st
 
 
 def _read_json(path: Path) -> object:
-    import orjson
-
     try:
         return orjson.loads(path.read_bytes())
     except (OSError, orjson.JSONDecodeError):
@@ -217,7 +218,7 @@ def _resolve_endpoint(
         return None, "indisponivel", "catálogo de endpoints indisponível"
     if auto:
         # A política canônica é a ordem de preferência que o inventário já aplica.
-        usaveis = inventory.select(usable=True)
+        usaveis = inventory.for_work()
         if not usaveis:
             return None, "indisponivel", "nenhum endpoint utilizável no catálogo"
         return usaveis[0], "auto", "resolvido pela política canônica"
@@ -369,8 +370,78 @@ def _operation(
     )
 
 
-def build_snapshot(settings: Settings, preferences: ControlPreferences) -> ControlSnapshot:
-    """Uma leitura coerente de tudo que o painel mostra, com a hora em que foi tirada."""
+def _stat_signature(path: Path) -> tuple[int, int]:
+    try:
+        stat = path.stat()
+    except OSError:
+        return (0, 0)
+    return (stat.st_mtime_ns, stat.st_size)
+
+
+def _catalog_signature(state_dir: Path) -> tuple[Any, ...]:
+    try:
+        return tuple(
+            sorted(
+                (path.name, _stat_signature(path))
+                for path in state_dir.iterdir()
+                if path.name.startswith("models-") and path.suffix == ".json"
+            )
+        )
+    except OSError:
+        return ()
+
+
+def _credential_fingerprint(settings: Settings) -> tuple[Any, ...]:
+    """Dica mascarada, nunca o valor. Dois Settings com a mesma dica batem."""
+    pares = (
+        ("google", settings.gemini_api_key),
+        ("groq", settings.groq_api_key),
+        ("nvidia", settings.nvidia_api_key),
+        ("ollama", settings.ollama_api_key),
+        ("nous", settings.nous_api_key),
+        ("openrouter", settings.openrouter_api_key),
+    )
+    return tuple(
+        (provedor, mask(chave.get_secret_value()) if chave is not None else None)
+        for provedor, chave in pares
+    )
+
+
+def _snapshot_signature(
+    settings: Settings, preferences: ControlPreferences
+) -> tuple[Any, ...]:
+    """Barato: mtime do que o snapshot lê. Não varre o quórum — isso é overlay."""
+    state = settings.state_dir
+    return (
+        str(settings.runtime_dir.resolve(strict=False)),
+        settings.work_max_calls,
+        settings.worker_concurrency,
+        settings.openrouter_allow_uncapped_free_tier,
+        tuple(sorted(settings.provider_concurrency.items())),
+        _credential_fingerprint(settings),
+        _stat_signature(settings.secrets_file),
+        _stat_signature(state / "autonomy" / "tasks.json"),
+        _stat_signature(state / "control.json"),
+        _stat_signature(state / "endpoints.json"),
+        _catalog_signature(state),
+        orjson.dumps(preferences.model_dump(mode="json"), option=orjson.OPT_SORT_KEYS),
+    )
+
+
+_SNAPSHOT_LOCK = threading.Lock()
+_SNAPSHOT_CACHE: tuple[tuple[Any, ...], ControlSnapshot] | None = None
+
+
+def clear_control_snapshot_cache() -> None:
+    """Só testes: o cache é por processo, e um tmp_path reutilizado mentiria."""
+    global _SNAPSHOT_CACHE
+    with _SNAPSHOT_LOCK:
+        _SNAPSHOT_CACHE = None
+
+
+def _assemble_snapshot(
+    settings: Settings, preferences: ControlPreferences
+) -> ControlSnapshot:
     inventory, cobertos, motivo_catalogo = _inventory(settings)
     notices = [motivo_catalogo] if motivo_catalogo else []
     budget_calls = execution_budget(settings, inventory)
@@ -388,3 +459,23 @@ def build_snapshot(settings: Settings, preferences: ControlPreferences) -> Contr
         operation=operation,
         notices=notices,
     )
+
+
+def build_snapshot(settings: Settings, preferences: ControlPreferences) -> ControlSnapshot:
+    """Uma leitura coerente de tudo que o painel mostra, com a hora em que foi tirada.
+
+    Recicla o objeto enquanto mtime e settings não mudam. O GET do painel chega a
+    cada poucos segundos; reler ``tasks.json`` com ``LOCK_EX`` nessa cadência é o
+    que saturava o threadpool. O rótulo de orçamento continua saindo de
+    ``execution_budget`` — o cache não inventa número.
+    """
+    global _SNAPSHOT_CACHE
+    key = _snapshot_signature(settings, preferences)
+    with _SNAPSHOT_LOCK:
+        cached = _SNAPSHOT_CACHE
+        if cached is not None and cached[0] == key:
+            return cached[1]
+    snapshot = _assemble_snapshot(settings, preferences)
+    with _SNAPSHOT_LOCK:
+        _SNAPSHOT_CACHE = (key, snapshot)
+    return snapshot

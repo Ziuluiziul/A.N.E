@@ -7,8 +7,8 @@ Uso:
 
 O artefato junta o que cada peça registrou por conta própria — diário de promoção,
 painel do quórum, decisão, histórico git e auditoria pós-commit — sem reescrever
-nenhuma delas. Saída: stdout e docs/audits/<data>-primeira-promocao/evidencia.json.
-Somente leitura sobre runtime/ e o repositório.
+nenhuma delas. Saída: stdout e runtime/audits/<data>-promocao/evidencia.json
+(runtime/ não é versionado). Somente leitura sobre runtime/ e o repositório.
 """
 
 from __future__ import annotations
@@ -156,8 +156,8 @@ def congelar(panel_id: str | None) -> int:
         },
     }
 
-    destino_dir = RAIZ / "docs" / "audits" / (
-        f"{datetime.now(UTC).strftime('%Y-%m-%d')}-primeira-promocao"
+    destino_dir = RAIZ / "runtime" / "audits" / (
+        f"{datetime.now(UTC).strftime('%Y-%m-%d')}-promocao"
     )
     destino_dir.mkdir(parents=True, exist_ok=True)
     destino = destino_dir / "evidencia.json"

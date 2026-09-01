@@ -9,9 +9,11 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 
+from vault import projection as projection_mod
 from vault.config import Settings
 from vault.control.credentials import ENV_VAR_BY_PROVIDER
 from vault.corpus import CorpusReader
@@ -23,7 +25,7 @@ from vault.operational import (
     demo_trail,
     quorum_trails,
 )
-from vault.projection import build_projection, with_runtime_quorum
+from vault.projection import build_projection, clear_runtime_overlay_cache, with_runtime_quorum
 from vault.work.roles import ROLES
 
 
@@ -507,3 +509,30 @@ def test_demo_e_runtime_declaram_origem_mista(tmp_path: Path, corpus_dir: Path) 
     demo = build_projection(CorpusReader(corpus_dir), demo_operational=True)
     merged = with_runtime_quorum(demo, tmp_path)
     assert merged["meta"]["operationalSource"] == "mixed"
+
+
+def test_overlay_nao_rele_json_enquanto_mtime_nao_muda(
+    tmp_path: Path, corpus_dir: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    painel_persistido(tmp_path)
+    clear_runtime_overlay_cache()
+    chamadas = {"n": 0}
+    original = projection_mod.build_operational
+
+    def contar(**kwargs: Any) -> tuple[dict[str, Any], str]:
+        chamadas["n"] += 1
+        return original(**kwargs)
+
+    monkeypatch.setattr(projection_mod, "build_operational", contar)
+    base = build_projection(CorpusReader(corpus_dir))
+    chamadas["n"] = 0
+    primeiro = with_runtime_quorum(base, tmp_path)
+    segundo = with_runtime_quorum(base, tmp_path)
+    assert chamadas["n"] == 1
+    assert primeiro["meta"]["counts"]["operationalNodes"] == segundo["meta"]["counts"][
+        "operationalNodes"
+    ]
+
+    (tmp_path / "panel-novo").mkdir()
+    with_runtime_quorum(base, tmp_path)
+    assert chamadas["n"] == 2

@@ -44,7 +44,7 @@ _HEX_HEADING = re.compile(r"(?im)^#{1,6}\s+[0-9a-f]{12}\s*$")
 _OPERATORNAME = re.compile(r"\\operatorname\*?\s*")
 _THIN_SPACE_JUNK = re.compile(r"\\[!,:;]\s+[A-Za-z]+[\[(]")
 _DOI = re.compile(r"(?:doi\.org/|doi:\s*)?(10\.\d{4,9}/[-._;()/:A-Z0-9]+)", re.I)
-_ARXIV = re.compile(r"(?:arxiv\.org/abs/|arXiv:)\s*(\d{4}\.\d{4,5}(?:v\d+)?)", re.I)
+_ARXIV = re.compile(r"(?:arxiv\.org/abs/|arXiv:)\s*`?(\d{4}\.\d{4,5}(?:v\d+)?)`?", re.I)
 _ISBN = re.compile(r"(?:ISBN(?:-1[03])?:?\s*)?((?:978|979)(?:[-\s]?\d){10})", re.I)
 
 
@@ -138,7 +138,8 @@ def latex_break_reason(text: str) -> str | None:
     return None
 
 
-def _identifiers(text: str) -> set[str]:
+def identifiers_in(text: str) -> set[str]:
+    """DOI, arXiv e ISBN no texto, na forma canônica `doi:` / `arxiv:` / `isbn:`."""
     encontrados: set[str] = set()
     for achado in _DOI.finditer(text):
         encontrados.add("doi:" + achado.group(1).casefold().rstrip(".,;"))
@@ -149,6 +150,10 @@ def _identifiers(text: str) -> set[str]:
         if len(digits) == 13:
             encontrados.add("isbn:" + digits)
     return encontrados
+
+
+def _identifiers(text: str) -> set[str]:
+    return identifiers_in(text)
 
 
 def identifier_removal_reason(old: str, new: str) -> str | None:

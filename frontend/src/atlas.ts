@@ -38,6 +38,7 @@ import {
 } from './contract';
 import type { CognitionFrame } from './cognition';
 import { createCloudTitles, type CloudKey, type CloudTitle } from './cloudTitles';
+import { escolherAlvoDoClique } from './pickTarget';
 import { CONTROLS } from './controls3d';
 import { panelShapeGeometry, textAreaOf, type PanelShape } from './panelShapes';
 import { buildRelationRegistry } from './relationRegistry';
@@ -1693,9 +1694,8 @@ export function createAtlas(
   /**
    * A entidade sob o cursor, seja ela do corpus ou da camada viva.
    *
-   * Uma lista só de alvos, e todos são superfícies preenchidas de painel. Não há mais
-   * placa auxiliar competindo pelo raio nem envoltório recebendo o clique no lugar do
-   * conteúdo — a gaiola já saiu do caminho em `depth.ts`.
+   * Se o raio acerta as duas placas no mesmo anel, o painel vivo fica com o
+   * clique: a nota, maior, cobria os dois painéis do observatório.
    */
   function alvoEm(ndc: { x: number; y: number }): {
     entityId: string;
@@ -1703,15 +1703,18 @@ export function createAtlas(
   } | null {
     ponteiro.set(ndc.x, ndc.y);
     raycaster.setFromCamera(ponteiro, camera);
-    const acerto = raycaster.intersectObjects(
-      [...corpos.pickTargets(), ...runtimeLayer.pickables()],
-      false,
-    )[0];
-    if (!acerto) return null;
-    const doCorpus = corpos.entityFor(acerto.object, acerto.instanceId);
-    if (doCorpus) return { entityId: doCorpus, runtime: false };
-    const daOperacao = runtimeLayer.selectionFor(acerto.object, acerto.instanceId);
-    return daOperacao ? { entityId: daOperacao.runtimeNodeId, runtime: true } : null;
+    const acertoOperacional = raycaster.intersectObjects(runtimeLayer.pickables(), false)[0];
+    const acertoCorpus = raycaster.intersectObjects(corpos.pickTargets(), false)[0];
+    const operacional = acertoOperacional
+      ? runtimeLayer.selectionFor(acertoOperacional.object, acertoOperacional.instanceId)
+      : null;
+    const corpus = acertoCorpus
+      ? corpos.entityFor(acertoCorpus.object, acertoCorpus.instanceId)
+      : null;
+    return escolherAlvoDoClique(
+      corpus === null ? null : { entityId: corpus },
+      operacional === null ? null : { entityId: operacional.runtimeNodeId },
+    );
   }
 
   function onPointerDown(event: PointerEvent): void {

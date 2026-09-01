@@ -2,9 +2,8 @@
 # ainda não validadas, logs e bancos vivem ali e nunca são versionados.
 runtime/
 
-# Segredos. As chaves ficam em ~/.config/ane/secrets.env (legado
-# ~/.config/vault-autodidata/secrets.env), fora do repositório; estes padrões
-# existem para que um deslize não vire commit.
+# Segredos. As chaves ficam em ~/.config/vault-autodidata/secrets.env, fora do
+# repositório; estes padrões existem para que um deslize não vire commit.
 .env
 secrets.env
 credentials.json
@@ -32,6 +31,18 @@ frontend/public/projection.json
 
 # Planos e estado de agentes locais — não são o produto.
 .hermes/
+.claude/
+
+# Diário de construção. Não é o produto; o arquivo vivo está no diretório
+# irmão _ane-construcao/. Nunca versionar de novo, nem copiar para o GitHub
+# público Ziuluiziul/A.N.E.
+docs/HANDOFF-*.md
+docs/CICLO-*.md
+docs/PROMPT-*.md
+docs/BOOTSTRAP-*.md
+docs/FRENTE-*.md
+docs/audits/
+docs/X-MCP.md
 
 # Artefatos de empacotamento — não pertencem ao histórico do corpus.
 *.bundle
