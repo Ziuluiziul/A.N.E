@@ -141,13 +141,18 @@ def latex_break_reason(text: str) -> str | None:
 def identifiers_in(text: str) -> set[str]:
     """DOI, arXiv e ISBN no texto, na forma canônica `doi:` / `arxiv:` / `isbn:`."""
     encontrados: set[str] = set()
+    dois: list[str] = []
     for achado in _DOI.finditer(text):
-        encontrados.add("doi:" + achado.group(1).casefold().rstrip(".,;"))
+        doi = achado.group(1).casefold().rstrip(".,;")
+        dois.append(doi)
+        encontrados.add("doi:" + doi)
     for achado in _ARXIV.finditer(text):
         encontrados.add("arxiv:" + achado.group(1).casefold())
+    doi_digitos = re.sub(r"\D", "", "".join(dois))
     for achado in _ISBN.finditer(text):
         digits = re.sub(r"\D", "", achado.group(1))
-        if len(digits) == 13:
+        # DOI Springer `10.1007/978-…-2_102` contém um ISBN-13; não é ocorrência.
+        if len(digits) == 13 and digits not in doi_digitos:
             encontrados.add("isbn:" + digits)
     return encontrados
 

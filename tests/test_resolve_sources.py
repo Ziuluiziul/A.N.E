@@ -71,10 +71,36 @@ def test_matching_so_normaliza_caixa_unicode_pontuacao() -> None:
         "Theory and Reality",
         "Theory and Reality: An Introduction to the Philosophy of Science, Second Edition",
     )
+    assert rs.titles_match(
+        "Planck 2018 results. VI. Cosmological parameters",
+        "<i>Planck</i>\n                    2018 results",
+    )
+    assert rs.titles_match(
+        "The ASA Statement on p-Values: Context, Process, and Purpose",
+        "The ASA Statement on\n                    <i>p</i>\n                    "
+        "-Values: Context, Process, and Purpose",
+    )
     assert not rs.titles_match(
         "Judgment under Uncertainty: Heuristics and Biases",
         "Estimating the reproducibility of psychological science",
     )
+
+
+def test_doi_springer_nao_e_isbn() -> None:
+    linha = (
+        "Bao-Fei Li e Parampreet Singh, em *Handbook of Quantum Gravity*, "
+        "DOI `10.1007/978-981-99-7681-2_102`."
+    )
+    assert rs.identifiers_in(linha) == {"doi:10.1007/978-981-99-7681-2_102"}
+    assert patch_identifiers(linha) == rs.identifiers_in(linha)
+
+
+def test_italico_curto_nao_e_titulo_de_artigo() -> None:
+    linha = (
+        "Watson & Crick, *Nature* 171:737–738 (1953), "
+        "DOI `10.1038/171737a0`"
+    )
+    assert rs.extract_title(linha) is None
 
 
 def test_collect_varre_linha_a_linha(tmp_path: Path) -> None:

@@ -53,6 +53,7 @@ _QUOTED = re.compile(r"[“\"«]([^”\"»]+)[”\"»]")
 _ITALIC = re.compile(r"(?<!\*)\*([^*]+)\*(?!\*)")
 _PUNCT = re.compile(r"[^\w\s]", re.UNICODE)
 _SPACES = re.compile(r"\s+")
+_TAGS = re.compile(r"<[^>]+>")
 
 CONTAINMENT_MIN = 12
 CROSSREF_PAUSE_S = 1.0
@@ -88,13 +89,17 @@ class Verdict:
 def identifiers_in(text: str) -> set[str]:
     """DOI, arXiv e ISBN no texto, na forma canônica doi:/arxiv:/isbn:."""
     encontrados: set[str] = set()
+    dois: list[str] = []
     for achado in _DOI.finditer(text):
-        encontrados.add("doi:" + achado.group(1).casefold().rstrip(".,;"))
+        doi = achado.group(1).casefold().rstrip(".,;")
+        dois.append(doi)
+        encontrados.add("doi:" + doi)
     for achado in _ARXIV.finditer(text):
         encontrados.add("arxiv:" + achado.group(1).casefold())
+    doi_digitos = re.sub(r"\D", "", "".join(dois))
     for achado in _ISBN.finditer(text):
         digits = re.sub(r"\D", "", achado.group(1))
-        if len(digits) == 13:
+        if len(digits) == 13 and digits not in doi_digitos:
             encontrados.add("isbn:" + digits)
     return encontrados
 
@@ -109,14 +114,16 @@ def extract_title(line: str) -> str | None:
     italic = _ITALIC.search(line)
     if italic:
         titulo = italic.group(1).strip()
-        if titulo:
+        # *Nature* numa linha de claim é o periódico, não o artigo.
+        if len(titulo) >= CONTAINMENT_MIN:
             return titulo
     return None
 
 
 def normalize_title(text: str) -> str:
-    """Caixa, Unicode, pontuação e espaços — o que a Política autoriza."""
-    compacto = unicodedata.normalize("NFKC", text).casefold()
+    """Caixa, Unicode, pontuação, tags HTML e espaços — o que a Política autoriza."""
+    compacto = _TAGS.sub(" ", text)
+    compacto = unicodedata.normalize("NFKC", compacto).casefold()
     compacto = _PUNCT.sub(" ", compacto)
     return _SPACES.sub(" ", compacto).strip()
 
@@ -344,7 +351,11 @@ def resolve_all(
     for chave in sorted(por_chave):
         grupo = por_chave[chave]
         primeira = grupo[0]
-        local = next((item.local_title for item in grupo if item.local_title), None)
+        local = max(
+            (item.local_title for item in grupo if item.local_title),
+            key=len,
+            default=None,
+        )
         guardado = entradas.get(chave) if not refresh else None
         if (
             isinstance(guardado, dict)
