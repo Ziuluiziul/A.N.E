@@ -877,7 +877,7 @@ def test_capacidade_ociosa_identidade_e_o_claim_nao_o_lote(tmp_path: Path) -> No
     assert idle_a[0].corpus_entity == "Dados/Nota aberta.md"
 
 
-def test_capacidade_ociosa_onda_diaria_nasce_identidade_nova(
+def test_capacidade_ociosa_onda_nasce_identidade_nova(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Claim ainda aberto ganha onda nova; lote de endpoints continua irrelevante."""

@@ -14,8 +14,10 @@ import {
   observableCognitiveWork,
   openCognitiveWork,
   withCognition,
+  withLiveThought,
   type CognitiveState,
 } from './cognitiveState';
+import { node } from './fixture';
 import type { CognitionFrame } from './cognition';
 import type { RuntimeEvent, RuntimeEventType, RuntimeSnapshot } from './runtime';
 
@@ -268,6 +270,21 @@ describe('o raciocínio do provedor sobreposto à trilha', () => {
     // O canal é efêmero e pode chegar fora de ordem. Deixá-lo reabrir uma chamada
     // encerrada faria a cena afirmar trabalho que a trilha diz que terminou.
     expect(depois.get(MODELO)!.state).toBe('final');
+  });
+
+  it('escreve o pensamento na placa canônica do modelo, não só no cartão', () => {
+    const placa = node('op/model/groq/qwen/qwen3', {
+      kind: 'quorum-member',
+      layer: 'operational',
+      domainId: 'operacional/modelos',
+      operational: { provider: 'groq', endpoint: 'qwen/qwen3' },
+    });
+    const comTexto = withLiveThought(
+      placa,
+      new Map([['groq/qwen/qwen3', 'estou conferindo o DOI']]),
+    );
+    expect(comTexto.operational?.narration).toBe('estou conferindo o DOI');
+    expect(withLiveThought(placa, new Map()).operational?.narration).toBeUndefined();
   });
 
   it('ignora modelo que a trilha não conhece e quadro sem texto', () => {

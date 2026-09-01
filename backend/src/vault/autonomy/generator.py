@@ -41,13 +41,15 @@ _REGIME = "liberdade-com-rigor-20260817"
 
 
 def _idle_wave() -> str:
-    """Onda UTC da capacidade ociosa: mesmo claim, outro dia → identidade nova.
+    """Onda UTC da capacidade ociosa: mesmo claim, outra faixa de 6 h → identidade nova.
 
-    Tarefas antigas (sem `wave`, ou onda anterior) continuam terminais; `add_new`
-    só aceita identidade inédita. Não inclui o lote de endpoints — isso inundou
-    a fila com 2083 `idle_capacity`. Teto: `_IDLE_FAN_OUT` painéis por dia UTC.
+    A onda diária queimava os 8 primeiros `open` de manhã e o worker passava o resto
+    do dia com fila zero — 14 claims abertos, 8 tentados, 6 intocáveis até meia-noite.
+    Quatro faixas por dia, com giro na lista, cobrem o acervo sem repetir o dilúvio
+    de 2083 `idle_capacity` (o lote de endpoints continua fora da identidade).
     """
-    return datetime.now(UTC).strftime("%Y-%m-%d")
+    agora = datetime.now(UTC)
+    return f"{agora.strftime('%Y-%m-%d')}-t{agora.hour // 6}"
 
 
 class TaskGenerator:
@@ -399,8 +401,10 @@ class TaskGenerator:
         # fazia cada rotação do acervo ocioso nascer tarefa nova — 2083 `idle_capacity`
         # na fila, a maioria já terminal, sem o corpus ter ganhado claim nenhum.
         lote = self.idle_endpoints[:_IDLE_ENDPOINTS_POR_TAREFA]
+        giro = sum(ord(caractere) for caractere in _idle_wave()) % len(abertos)
+        janela = abertos[giro:] + abertos[:giro]
         tarefas: list[AutonomousTask] = []
-        for note, claim in abertos[:_IDLE_FAN_OUT]:
+        for note, claim in janela[:_IDLE_FAN_OUT]:
             source = {
                 "claim": claim.id,
                 "note": note.id,

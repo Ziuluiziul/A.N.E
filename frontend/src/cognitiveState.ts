@@ -28,6 +28,7 @@
 // Módulo puro: recebe o instantâneo e devolve estado por modelo. Sem Three.js, sem rede.
 
 import type { CognitionFrame } from './cognition';
+import type { ProjectionNode } from './contract';
 import type { RuntimeEvent, RuntimeEventType, RuntimeSnapshot } from './runtime';
 
 export type CognitiveState = 'latent' | 'reasoning' | 'acting' | 'final' | 'error';
@@ -367,6 +368,25 @@ export function withCognition(
 /** O modelo está trabalhando **agora**? É o que decide o pulso de atividade na cena. */
 export function isWorking(status: CognitiveStatus): boolean {
   return status.state === 'acting' || status.state === 'reasoning';
+}
+
+/**
+ * O raciocínio ao vivo também mora na placa canônica do modelo (`op/model/…`).
+ *
+ * Sem isto, só o cartão inferior esquerdo e o `runtime:model:` da nuvem viva
+ * recebiam o texto: a nuvem MODELOS — onde a pessoa procura o hexágono do
+ * provedor — continuava com a ficha de catálogo.
+ */
+export function withLiveThought(
+  node: ProjectionNode,
+  thoughts: ReadonlyMap<string, string>,
+): ProjectionNode {
+  const meta = node.operational;
+  if (meta === undefined || meta.eventType !== undefined) return node;
+  if (!meta.provider || !meta.endpoint) return node;
+  const thought = thoughts.get(`${meta.provider}/${meta.endpoint}`)?.trim();
+  if (!thought || meta.narration === thought) return node;
+  return { ...node, operational: { ...meta, narration: thought } };
 }
 
 /** A frase que o painel do modelo mostra, no estado em que ele está. */

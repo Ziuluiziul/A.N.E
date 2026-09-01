@@ -475,6 +475,63 @@ def test_json_corrompido_e_symlink_fora_da_raiz_sao_ignorados(tmp_path: Path) ->
     assert [node["operational"]["panelId"] for node in paineis] == ["panel-001"]
 
 
+def test_nuvem_de_modelos_omite_sku_nunca_sondado(tmp_path: Path) -> None:
+    """Catálogo descoberto sem sonda não vira floresta na nuvem MODELOS."""
+    painel_persistido(tmp_path)
+    estado = tmp_path / "state"
+    estado.mkdir()
+    (estado / "models-discovery.json").write_text(
+        json.dumps({"providers": {"nvidia": "models-nvidia.json"}}),
+        encoding="utf-8",
+    )
+    (estado / "models-nvidia.json").write_text(
+        json.dumps(
+            {
+                "models": [
+                    {"provider": "nvidia", "endpoint_id": "usado", "available": True},
+                    {
+                        "provider": "nvidia",
+                        "endpoint_id": "nunca-sondado",
+                        "available": True,
+                    },
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    (estado / "endpoints.json").write_text(
+        json.dumps(
+            {
+                "endpoints": {
+                    "nvidia/usado": {
+                        "provider": "nvidia",
+                        "endpoint_id": "usado",
+                        "observed_status": "ok",
+                    }
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    camada = quorum_trails(tmp_path, state_dir=estado)
+    modelos = {
+        node["id"]
+        for node in camada["nodes"]
+        if node["kind"] == "quorum-member" and node["domainId"] == "operacional/modelos"
+    }
+    assert "op/model/nvidia/usado" in modelos
+    assert "op/model/nvidia/nunca-sondado" not in modelos
+
+
+def test_voto_nao_repete_o_mesmo_titulo_para_endpoints_distintos(tmp_path: Path) -> None:
+    painel_persistido(tmp_path)
+    camada = quorum_trails(tmp_path, include_history=True)
+    votos = [node for node in camada["nodes"] if node["kind"] == "quorum-vote"]
+    titulos = [node["title"] for node in votos]
+    assert len(titulos) == len(set(titulos))
+    assert any("qwen3" in titulo for titulo in titulos)
+
+
 def test_quorum_trails_projeta_observatorio_recente(tmp_path: Path) -> None:
     painel_persistido(tmp_path)
     camada = quorum_trails(tmp_path)

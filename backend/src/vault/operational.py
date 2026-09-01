@@ -624,6 +624,17 @@ def _model_registry(
             # Participou sem constar do acervo: o registro de endpoints está atrasado,
             # e é melhor a nuvem mostrar a divergência do que escondê-la.
             modelos[endpoint] = (contagem, "desconhecido")
+    # Nunca sondado e nunca chamado não merece placa: 102 SKUs NVIDIA viravam
+    # floresta na nuvem MODELOS, e a RACIOCÍNIO parecia duplicar o catálogo.
+    # Quem respondeu, falhou de um jeito observável, ou participou de um painel
+    # recente continua visível — inclusive o `desconhecido` que a sonda ainda
+    # não registrou.
+    for provider, modelos in list(por_provedor.items()):
+        por_provedor[provider] = {
+            endpoint: dados
+            for endpoint, dados in modelos.items()
+            if dados[0] > 0 or dados[1] != "not_tested"
+        }
     if not por_provedor:
         return {"nodes": [], "edges": []}
 
@@ -1058,11 +1069,12 @@ def _project_panel(directory: Path, root: Path) -> dict[str, list[dict[str, Any]
             papel = _safe_text(record.get("reviewer", {}).get("role_name"), limit=64)
             if papel:
                 vote_operational["role"] = papel
+            marca = (vote_endpoint or vote_provider).rsplit("/", 1)[-1]
             nodes.append(
                 _node(
                     vote_node_id,
                     "quorum-vote",
-                    f"Voto: {decision} · {vote_provider}",
+                    f"Voto: {decision} · {marca}",
                     short=decision,
                     at=created_at,
                     domain=QUORUM_DOMAIN,

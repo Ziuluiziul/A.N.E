@@ -36,7 +36,8 @@ import {
   type ProjectionNode,
   type RelationFamily,
 } from './contract';
-import type { CognitionFrame } from './cognition';
+import { selectThoughts, type CognitionFrame } from './cognition';
+import { withLiveThought } from './cognitiveState';
 import { createCloudTitles, type CloudKey, type CloudTitle } from './cloudTitles';
 import { escolherAlvoDoClique } from './pickTarget';
 import { CONTROLS } from './controls3d';
@@ -86,6 +87,7 @@ import {
   MODEL_DOMAIN,
   PROVIDER_DOMAIN,
   WORKER_DOMAIN,
+  describePanel,
   linesUpTo,
   type PanelDescriptor,
   type PanelLine,
@@ -544,6 +546,7 @@ export function createAtlas(
   const corpos = createPanelBodies(nosDaCena, positions);
   scene.add(corpos.group);
   const slots = new Map<string, NodeSlot>();
+  let pensamentosVivos = new Map<string, string>();
   for (const node of nosDaCena) {
     const p = positions.get(node.id) ?? { x: 0, y: 0, z: 0 };
     slots.set(node.id, {
@@ -2127,14 +2130,22 @@ export function createAtlas(
     };
 
     for (const slot of slots.values()) {
-      const descriptor = corpos.descriptorFor(slot.node.id);
       const medida = corpos.extentFor(slot.node.id);
       // A posição desenhada, não a assentada: o painel selecionado sobe, e o texto
       // que ficasse na cota do layout desapareceria atrás da própria placa.
       const onde = corpos.renderPositionFor(slot.node.id);
       const nivel = nivelDe(slot);
-      if (!descriptor || !medida || !onde || nivel === undefined) continue;
+      if (!medida || !onde || nivel === undefined) continue;
+      const nodeVivo = withLiveThought(slot.node, pensamentosVivos);
+      const descriptor =
+        nodeVivo === slot.node
+          ? corpos.descriptorFor(slot.node.id)
+          : describePanel(nodeVivo);
+      if (!descriptor) continue;
       inscrever(slot.node.id, descriptor, onde, medida, nivel, 'corpus');
+      if (nodeVivo !== slot.node && nodeVivo.operational?.narration) {
+        versaoDasLinhas.set(slot.node.id, nodeVivo.operational.narration);
+      }
     }
 
     for (const painel of runtimeLayer.panels()) {
@@ -2595,10 +2606,12 @@ export function createAtlas(
     },
     panelFaceRect: faceDoPainel,
     panelLines(entityId) {
-      const descriptor =
-        corpos.descriptorFor(entityId) ??
-        runtimeLayer.panels().find((painel) => painel.entityId === entityId)?.descriptor ??
-        null;
+      const slot = slots.get(entityId);
+      const descriptor = slot
+        ? describePanel(withLiveThought(slot.node, pensamentosVivos))
+        : (corpos.descriptorFor(entityId) ??
+          runtimeLayer.panels().find((painel) => painel.entityId === entityId)?.descriptor ??
+          null);
       if (!descriptor) return [];
       // O documento buscado tem precedência sobre as frases derivadas, pela mesma razão
       // que tem na placa: as duas dizem a mesma coisa, e a íntegra diz melhor.
@@ -2617,6 +2630,7 @@ export function createAtlas(
     },
     fitToGraph,
     updateCognition(frames) {
+      pensamentosVivos = selectThoughts(frames);
       runtimeLayer.updateCognition(frames);
       registrarAtividade();
       // O texto da placa é inscrito aqui dentro, e só aqui. Sem esta chamada a camada
