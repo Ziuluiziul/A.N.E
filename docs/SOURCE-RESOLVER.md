@@ -43,6 +43,5 @@ item — não por um host genérico de catálogo.
 
 ## O que isto não é
 
-Não é ADR. Não é handoff. Não descreve ciclo 2. Não copia corpo de
-nota. O índice de docs permanece o [README](README.md); CICLO e
-HANDOFF ficam fora.
+Não é ADR. Não copia corpo de nota. O índice de docs permanece o
+[README](README.md).

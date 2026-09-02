@@ -64,8 +64,7 @@ vocabulários do frontmatter, `review_after` vencido, datas, forma e vocabulári
 claims e unicidade dos seus IDs. Zero em todas as linhas de defeito, ou a alteração
 não está pronta.
 
-Este script substitui o gate determinístico do pipeline antigo, descontinuado na
-migração de 2026-07-28. Ele é um auditor **estrutural e parcial**: não valida
+O `tools/audit.py` é um auditor **estrutural e parcial**: não valida
 verdade científica, não resolve fontes e não confere se um identificador
 corresponde ao título canônico. Sair com código 0 significa que a estrutura está
 íntegra, nunca que o conteúdo está certo. A própria saída declara separadamente
@@ -81,15 +80,9 @@ moram em `~/.config/ane/secrets.env` (legado `~/.config/vault-autodidata/secrets
 
 ## Superfície do produto
 
-O GitHub público é [`Ziuluiziul/A.N.E`](https://github.com/Ziuluiziul/A.N.E).
-Ele recebe **só a versão funcional**: código, corpus, ADRs e specs. Handoff,
-CICLO, PROMPT, BOOTSTRAP, frente morfogênica, `docs/audits/` e notas de plugin
-**não entram** — já existem no histórico do vault privado e no diretório irmão
-`_ane-construcao/`.
-
-Não copie a working tree para o público. `make audit` recusa esses arquivos no
-índice; `make publish-check` é o mesmo gate isolado. Branch extra no A.N.E.
-público é o modo como o diário vazou da última vez — o público tem só `main`.
+Este repositório **é** o produto: código, corpus, ADRs e specs. `make audit`
+recusa no índice Git o que não pertence a essa superfície; `make publish-check`
+é o mesmo gate isolado. A branch padrão é `main`.
 
 ## Escopo
 

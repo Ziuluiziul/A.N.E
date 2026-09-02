@@ -1,7 +1,7 @@
 # Comandos do projeto. Cada alvo é uma linha legível: nada de orquestração
 # escondida. `uv run` resolve o ambiente a partir de uv.lock antes de executar.
 
-.PHONY: setup audit audit-reducao audit-fontes publish-check publish-public test lint dev icon retire-tasks outcomes promote worker backend frontend discover-models endpoints probe-streams smoke-providers work quorum corpus-graph workspace-oauth
+.PHONY: setup audit audit-reducao audit-fontes publish-check test lint dev icon retire-tasks outcomes promote worker backend frontend discover-models endpoints probe-streams smoke-providers work quorum corpus-graph workspace-oauth
 
 setup:  ## Cria .venv e instala dependências Python e Node pelos lockfiles
 	uv sync --frozen --all-groups
@@ -14,11 +14,8 @@ audit:  ## Auditoria estrutural + guarda de redução contra HEAD + superfície 
 	python3 tools/audit.py --contra=HEAD
 	python3 tools/surface.py
 
-publish-check:  ## Recusa diário de construção no índice Git (o que o público pode ver)
+publish-check:  ## Confere que o índice Git contém só a superfície do produto
 	python3 tools/surface.py
-
-publish-public: publish-check  ## Espelha o HEAD limpo em Ziuluiziul/A.N.E (push)
-	bash tools/publish_public.sh
 
 audit-reducao:  ## Redução medida contra outra referência (REF=HEAD)
 	python3 tools/audit.py --contra=$(or $(REF),HEAD)
