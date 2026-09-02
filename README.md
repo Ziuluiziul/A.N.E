@@ -4,9 +4,8 @@
 corpus acadêmico. O corpus é o produto; o resto é código de apoio a ele.
 
 O corpus vive em `knowledge/`. As contagens vivas — notas, wikilinks, claims — são
-sempre as que `make audit` imprime; não fixe números aqui. O histórico Git inclui a
-tag `baseline-pos-migracao-2026-07-30`. O identificador técnico do repositório e do
-pacote Python continua `vault-autodidata` / `vault`; o nome do sistema é A.N.E.
+sempre as que `make audit` imprime; não fixe números aqui. O pacote Python mora em
+`backend/src/vault/` (`vault`).
 
 ## Começar
 

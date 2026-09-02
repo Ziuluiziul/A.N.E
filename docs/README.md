@@ -1,8 +1,7 @@
 # Documentação do A.N.E.
 
-Este diretório guarda decisões de arquitetura, o guia do Workspace e as
-specs de provedor, SSE e worker.
-Não é diário de sessões, nem arquivo de handoffs.
+Este diretório reúne as decisões de arquitetura, o guia do Workspace e as
+especificações de provedor, SSE e worker.
 
 | Documento | Papel |
 | --- | --- |
@@ -18,9 +17,5 @@ Não é diário de sessões, nem arquivo de handoffs.
 | [ATLAS-SSE.md](ATLAS-SSE.md) | Contrato HTTP SSE do tecido runtime (não MongoDB Atlas) |
 | [WORKER.md](WORKER.md) | `VAULT_AUTONOMOUS_WORKER`: quem spawna, default, teto de chamadas |
 | [SOURCE-RESOLVER.md](SOURCE-RESOLVER.md) | Contrato DOI/arXiv/ISBN; skip sem rede |
-
-Este diretório não é diário de sessões. Handoff, CICLO, PROMPT, BOOTSTRAP,
-frente morfogênica e auditoria de sessão ficam fora do índice e fora do
-GitHub público. Docs não promovem handoff a spec.
 
 O corpus e a política editorial moram em `knowledge/`, nunca aqui.

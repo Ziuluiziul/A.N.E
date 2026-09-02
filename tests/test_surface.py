@@ -1,4 +1,4 @@
-"""A superfície do produto não versiona o diário que a construiu."""
+"""O índice Git deste repositório contém só a superfície do produto."""
 
 from __future__ import annotations
 

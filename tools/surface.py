@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Superfície do produto — o que pode ir ao GitHub público A.N.E.
+"""Superfície do produto — o que este repositório versiona.
 
-Handoff, ciclo, prompt, bootstrap, frente morfogênica, auditoria de sessão e
-notas de plugin não são o produto. Vivem no diretório irmão ``_ane-construcao/``
-e no histórico do vault privado. Este script recusa qualquer um deles no índice Git.
+Este repositório é o produto: código, corpus, ADRs e specs. O script recusa
+no índice Git caminhos fora dessa superfície: prefixos reservados sob
+``docs/`` (``HANDOFF-``, ``CICLO-``, ``PROMPT-``, ``BOOTSTRAP-``, ``FRENTE-``),
+``docs/audits/``, ``docs/X-MCP.md`` e ``.claude/``.
 
     python3 tools/surface.py
     make publish-check
@@ -28,7 +29,7 @@ _PREFIXOS_DOCS = (
 
 
 def e_construcao(caminho: str) -> bool:
-    """Verdadeiro se o path versionado é diário de construção, não produto."""
+    """Verdadeiro se o path versionado está fora da superfície do produto."""
 
     posix = caminho.replace("\\", "/")
     if posix == "docs/X-MCP.md" or posix.startswith(".claude/"):
@@ -66,16 +67,15 @@ def main(argv: Sequence[str] | None = None) -> int:
     vazou = verificar()
     if vazou:
         print(
-            "SUPERFÍCIE REPROVADA — diário de construção no índice Git "
-            f"({len(vazou)}). Arquivo interno: diretório irmão _ane-construcao/",
+            "SUPERFÍCIE REPROVADA — arquivos fora da superfície do produto "
+            f"no índice Git ({len(vazou)}).",
             file=sys.stderr,
         )
         for path in vazou:
             print(path, file=sys.stderr)
         return 1
     print(
-        "SUPERFÍCIE APROVADA — nenhum handoff, ciclo, prompt "
-        "ou auditoria de sessão no índice."
+        "SUPERFÍCIE APROVADA — índice restrito a código, corpus, ADRs e specs."
     )
     return 0
 

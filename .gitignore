@@ -33,9 +33,7 @@ frontend/public/projection.json
 .hermes/
 .claude/
 
-# Diário de construção. Não é o produto; o arquivo vivo está no diretório
-# irmão _ane-construcao/. Nunca versionar de novo, nem copiar para o GitHub
-# público Ziuluiziul/A.N.E.
+# Fora da superfície do produto. Não versionar.
 docs/HANDOFF-*.md
 docs/CICLO-*.md
 docs/PROMPT-*.md

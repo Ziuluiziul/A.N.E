@@ -1,4 +1,4 @@
-# Mesmo que alguém force-add o diário de construção, `git archive` não o leva.
+# Mesmo que alguém force-add estes caminhos, `git archive` não os leva.
 docs/HANDOFF-*.md export-ignore
 docs/CICLO-*.md export-ignore
 docs/PROMPT-*.md export-ignore
